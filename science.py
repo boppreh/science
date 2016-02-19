@@ -1,3 +1,7 @@
+"""
+Matplotlib. Wrapper. Smart. Tufte. Pythonic.
+"""
+
 from types import GeneratorType
 import matplotlib
 from matplotlib import pyplot
@@ -87,3 +91,4 @@ class Plot:
 
 if __name__ == '__main__':
     Plot.count([1, 1, 1, 2, 3, 1, 2, 6, 8, 5, 3, 1, 102], title='asdf').show()
+    #Plot({'a': 100, 'b': 500}).show()
