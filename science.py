@@ -3,8 +3,10 @@ import matplotlib
 from matplotlib import pyplot
 
 class Plot:
+    defaults = {'bars': False, 'grid': False, 'fill': False, 'bars_width': 1, 'xkcd': False}
+
     @staticmethod
-    def count(samples, bins=None, *args, **kwargs):
+    def count(samples, bins=None, **options):
         if bins is None:
             bins = 1
         if isinstance(bins, int):
@@ -20,35 +22,59 @@ class Plot:
                     if bin_start <= sample < bin_end)
             data[bin] += 1
 
-        plot = Plot(data, *args, **kwargs)
+        options.setdefault('bars', True)
+        plot = Plot(data, **options)
         plot.bars_width = [bin_end - bin_start for bin_start, bin_end in zip(bins, bins[1:])] + [bins[-1] - bins[-2]]
         return plot
 
-    def __init__(self, data, grid=False, bars=False, title='', xlabel='', ylabel=''):
+    def __init__(self, data, title='', xlabel='', ylabel='', **options):
         if isinstance(data, (list, tuple, GeneratorType, range)):
             data = dict(enumerate(data))
+
         self.data = data
-        self.grid = grid
-        self.bars = bars
         self.xlabel = xlabel
         self.ylabel = ylabel
-        self.bars_width = 1
         self.title = title
+        
+        copy = dict(Plot.defaults)
+        copy.update(options)
+        for option, value in copy.items():
+            setattr(self, option, value)
 
     def _make_figure(self):
+        matplotlib.rcParams['xtick.direction'] = 'out'
+        matplotlib.rcParams['ytick.direction'] = 'out'
+
+        pyplot.figure(figsize=(12, 9))
+        ax = pyplot.subplot(111)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        # Ensure ticks only on left and bottom, removing top and right ticks.
+        ax.get_xaxis().tick_bottom()
+        ax.get_yaxis().tick_left()
+
+        if self.xkcd:
+            pyplot.xkcd()
+
+        args = {}
+        fn = pyplot.plot
+
         if self.bars:
             fn = pyplot.bar
             args = {'width': self.bars_width}
-        else:
-            fn = pyplot.plot
-            args = {}
-        matplotlib.rcParams['xtick.direction'] = 'out'
-        matplotlib.rcParams['ytick.direction'] = 'out'
+        elif self.fill:
+            fn = pyplot.fill_between
+
         fn(list(self.data.keys()), list(self.data.values()), **args)
+
         pyplot.title(self.title)
         pyplot.grid(self.grid)
         pyplot.xlabel(self.xlabel)
         pyplot.ylabel(self.ylabel)
+        pyplot.ylim(0, max(self.data.values()))
+        pyplot.xlim(0, max(self.data.keys()))
+        pyplot.xticks(fontsize=14)
+        pyplot.yticks(fontsize=14)
 
     def show(self):
         self._make_figure()
@@ -60,4 +86,4 @@ class Plot:
         pyplot.savefig(path)
 
 if __name__ == '__main__':
-    Plot.count([1, 1, 1, 2, 3, 1, 2, 6, 8, 5, 3, 1, 102], grid=True, bars=True, title='asdf').show()
+    Plot.count([1, 1, 1, 2, 3, 1, 2, 6, 8, 5, 3, 1, 102], title='asdf').show()
