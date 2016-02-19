@@ -7,7 +7,10 @@ import matplotlib
 from matplotlib import pyplot
 
 class Plot:
-    defaults = {'bars': False, 'grid': False, 'fill': False, 'bars_width': 1, 'xkcd': False}
+    bars = False
+    grid = False
+    fill = False
+    bars_width = 1
 
     @staticmethod
     def count(samples, bins=None, **options):
@@ -40,9 +43,9 @@ class Plot:
         self.ylabel = ylabel
         self.title = title
         
-        copy = dict(Plot.defaults)
-        copy.update(options)
-        for option, value in copy.items():
+        for option, value in options.items():
+            if not hasattr(self, option):
+                raise ValueError('Invalid option: {}'.format(option))
             setattr(self, option, value)
 
     def _make_figure(self):
@@ -56,9 +59,6 @@ class Plot:
         # Ensure ticks only on left and bottom, removing top and right ticks.
         ax.get_xaxis().tick_bottom()
         ax.get_yaxis().tick_left()
-
-        if self.xkcd:
-            pyplot.xkcd()
 
         args = {}
         fn = pyplot.plot
@@ -91,5 +91,5 @@ class Plot:
         pyplot.savefig(path, bbox_inches="tight")
 
 if __name__ == '__main__':
-    Plot.count([1, 1, 1, 2, 3, 1, 2, 6, 8, 5, 3, 1, 102], title='asdf').show()
+    Plot.count([1, 1, 1, 2, 3, 1, 2, 6, 8, 5, 3, 1, 102], title='asdf', bars=False).show()
     #Plot({'a': 100, 'b': 500}).show()
