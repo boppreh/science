@@ -1,7 +1,3 @@
-# STATS
-
-
-# GRAPHS
 from types import GeneratorType
 import matplotlib
 from matplotlib import pyplot
@@ -63,38 +59,5 @@ class Plot:
         self._make_figure()
         pyplot.savefig(path)
 
-def count(samples, bin_size=1):
-    pass
-
 if __name__ == '__main__':
     Plot.count([1, 1, 1, 2, 3, 1, 2, 6, 8, 5, 3, 1, 102], grid=True, bars=True, title='asdf').show()
-    
-    exit()
-    
-    from matplotlib.pyplot import figure, show
-    from numpy import arange, sin, pi
-
-    t = arange(0.0, 1.0, 0.01)
-
-    fig = figure(1)
-
-    ax1 = fig.add_subplot(211)
-    ax1.plot(t, sin(2*pi*t))
-    ax1.grid(True)
-    ax1.set_ylim((-2, 2))
-    ax1.set_ylabel('1 Hz')
-    ax1.set_title('A sine wave or two')
-
-    for label in ax1.get_xticklabels():
-        label.set_color('r')
-
-
-    ax2 = fig.add_subplot(212)
-    ax2.plot(t, sin(2*2*pi*t))
-    ax2.grid(True)
-    ax2.set_ylim((-2, 2))
-    l = ax2.set_xlabel('Hi mom')
-    l.set_color('g')
-    l.set_fontsize('large')
-
-    show()
