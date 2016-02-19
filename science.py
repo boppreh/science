@@ -87,7 +87,8 @@ class Plot:
 
     def save(self, path):
         self._make_figure()
-        pyplot.savefig(path)
+        # Remove extraneous whitespace.
+        pyplot.savefig(path, bbox_inches="tight")
 
 if __name__ == '__main__':
     Plot.count([1, 1, 1, 2, 3, 1, 2, 6, 8, 5, 3, 1, 102], title='asdf').show()
