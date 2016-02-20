@@ -75,8 +75,20 @@ class Plot:
         pyplot.grid(self.grid)
         pyplot.xlabel(self.xlabel)
         pyplot.ylabel(self.ylabel)
-        pyplot.ylim(0, max(self.data.values()))
-        pyplot.xlim(0, max(self.data.keys()))
+        max_data = max(self.data.values())
+        min_data = min(self.data.values())
+        # Avoid trncating Y axis unless absolutely necessary.
+        distance = max_data - min_data
+        if distance > 0.01 * min_data:
+            pyplot.ylim(0, max_data)
+        else:
+            pyplot.ylim(min_data - distance * 0.3, max_data + distance * 0.3)
+
+        # Show full value in Y ticks, instead of using an offset.
+        y_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
+        ax.yaxis.set_major_formatter(y_formatter)
+
+        pyplot.xlim(min(self.data.keys()), max(self.data.keys()))
         pyplot.xticks(fontsize=14)
         pyplot.yticks(fontsize=14)
 
@@ -91,5 +103,6 @@ class Plot:
         pyplot.savefig(path, bbox_inches="tight")
 
 if __name__ == '__main__':
-    Plot.count([1, 1, 1, 2, 3, 1, 2, 6, 8, 5, 3, 1, 102], title='asdf', bars=False).show()
+    #Plot([100100, 100200, 100300, 100100, 100150, 100520, 100300]).show()
+    Plot([0, 200, 300, 100, 150, 520, 300]).show()
     #Plot({'a': 100, 'b': 500}).show()
