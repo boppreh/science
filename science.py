@@ -28,6 +28,21 @@ pyplot.style.use('ggplot')
 #matplotlib.rcParams['xtick.direction'] = 'out'
 #matplotlib.rcParams['ytick.direction'] = 'out'
 
+def format_number(n, width):
+    if int(width) == width and int(n) == n:
+        return '{:,d}'.format(int(n))
+
+    decimal_digits = max(0, int(-math.log10(width)+2), int(-math.log10(abs(n) or 1)))
+    format = '{' + ':0,.{}f'.format(decimal_digits) + '}'
+    return format.format(n)
+
+def min_max_dif(values):
+    if len(values) < 2:
+        return 0, 0
+    sorted_values = sorted(values)
+    difs = [abs(b - a) for a, b in zip(sorted_values, sorted_values[1:])]
+    return min(difs), sorted_values[-1] - sorted_values[0]
+
 class BasePlot(object):
     """
     BasePlot doesn't actually draw anything, but configures general layout,
@@ -103,11 +118,13 @@ class BasePlot(object):
         ax.get_xaxis().tick_bottom()
         ax.get_yaxis().tick_left()
 
-        # Show full value in ticks, instead of using an offset.
-        ax.xaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter(useOffset=False, useLocale=True))
-        ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter(useOffset=False, useLocale=True))
+        if not hasattr(values[0], '__iter__'):
+            _, values_width = min_max_dif(values)
+            ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: format_number(x, values_width)))
 
-         #matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ','))
+        if not hasattr(keys[0], '__iter__') and keys[0] is not None:
+            _, keys_width = min_max_dif(keys)
+            ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: format_number(x, keys_width)))
 
         # Handle non-numeric data on the x-axis.
         if isinstance(keys[0], str):
@@ -118,6 +135,11 @@ class BasePlot(object):
             ax.set_xticks(num_keys)
             ax.set_xticklabels(keys, rotation=rotation)
             keys = num_keys
+            
+        #ax.get_xaxis().set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: format(x, ',')))
+        #ax.get_yaxis().set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: format(x, ',')))
+
+         #matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ','))
 
         self._draw(keys, values, ax)
         # For unknown reasons must be called *after* drawing. Otherwise the
@@ -317,7 +339,8 @@ class BarPlot(BasePlot):
                     y = rect.get_y()+height - padding
                 else:
                     y = rect.get_y()+height + padding * 2
-                value = round(rect.get_y() or height, 4)
+                _, max_width = min_max_dif(values)
+                value = format_number(rect.get_y() or height, max_width)
                 ax.text(rect.get_x() + rect.get_width()/2., y, value, ha='center', va='top')
 
 class Histogram(BarPlot):
@@ -332,11 +355,8 @@ class Histogram(BarPlot):
         each class, used to aggregate values, and defaults to an
         algorithmically chosen value with up to `self.max_bins` bins.
         """
-        samples_set = sorted(set(samples))
         if bin is None:
-            difs = [b - a for a, b in zip(samples_set, samples_set[1:])]
-            min_dif = min(difs)
-            max_dif = samples_set[-1] - samples_set[0]
+            min_dif, max_dif = min_max_dif(set(samples))
             # Use the smallest difference as bin size, up to a maximum of 40.
             bin = max(min_dif, max_dif / self.max_bins)
 
