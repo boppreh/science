@@ -2,7 +2,6 @@
 Matplotlib. Wrapper. Smart. Tufte. Pythonic.
 """
 
-from types import GeneratorType
 import matplotlib
 from matplotlib import pyplot
 from collections import defaultdict, Counter
@@ -14,18 +13,18 @@ class BasePlot(object):
     ylabel = ''
     extra_width = 0
 
-    def __init__(self, data, options):
+    def __init__(self, data, **options):
         self.data = self._format_data(data)
         self._apply_options(options)
 
     def _format_data(self, data):
-        is_list = lambda a: isinstance(a, (list, tuple, GeneratorType, range))
+        is_list = lambda a: hasattr(a, '__iter__') and not isinstance(a, str)
         if is_list(data):
             data = list(data)
             if len(data) and is_list(data[0]):
                 return data
             else:
-                return enumerate(data)
+                return list(enumerate(data))
         elif isinstance(data, dict):
             return list(data.items())
         else:
@@ -109,7 +108,7 @@ class Histogram(BasePlot):
         self.bars_width = bin
         print(bin)
         self.extra_width = self.bars_width
-        super().__init__(data, options)
+        super().__init__(data, **options)
 
     def _plot(self, keys, values):
         pyplot.bar(keys, values, width=self.bars_width)
@@ -118,28 +117,19 @@ class ScatterPlot(BasePlot):
     pass
 
 class LinePlot(BasePlot):
-    """
-    self.fill:
-            fn = pyplot.fill_between
-    """
+    fill = False
 
-    @staticmethod
-    def count(samples, bins=None, **options):
-        
-        return plot
-
-    def __init__(self, data, title='', xlabel='', ylabel='', **options):
-        
-
-        self.data = data
-        self.xlabel = xlabel
-        self.ylabel = ylabel
-        self.title = title
-        
+    def _plot(self, keys, values):
+        if self.fill:
+            # FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+            # https://github.com/matplotlib/matplotlib/issues/5209
+            pyplot.fill_between(keys, values)
+        else:
+            pyplot.plot(keys, values)
         
 
 if __name__ == '__main__':
     from random import randint, random
     #Histogram([100100, 100200, 100300, 100100, 100150, 100520, 100300]).show()
-    Histogram([randint(10, 100) for i in range(100)]).show()
+    LinePlot([randint(10, 100)+random() for i in range(1000)], fill=True).show()
     #Plot({'a': 100, 'b': 500}).show()
