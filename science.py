@@ -104,8 +104,10 @@ class BasePlot(object):
         ax.get_yaxis().tick_left()
 
         # Show full value in ticks, instead of using an offset.
-        ax.xaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter(useOffset=False))
-        ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter(useOffset=False))
+        ax.xaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter(useOffset=False, useLocale=True))
+        ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter(useOffset=False, useLocale=True))
+
+         #matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ','))
 
         # Handle non-numeric data on the x-axis.
         if isinstance(keys[0], str):
@@ -185,7 +187,7 @@ class Network(BasePlot):
     """
     layout = 'neato'
     node_size = None
-    with_labels = False
+    with_labels = None
     directed = False
     arrowstyle = '-|>' # http://matplotlib.org/api/patches_api.html?highlight=fancyarrowpatch#matplotlib.patches.FancyArrowPatch
     node_color = 'r'
@@ -241,6 +243,10 @@ class Network(BasePlot):
 
         # We are not plotting actual values, hide both axis.
         ax.axis('off')
+
+        # Automatically show labels for small networks.
+        if self.with_labels is None and len(self.data) < 10:
+            self.with_labels = True
         
         # Increase node size to fit labels.
         if self.node_size is None:
@@ -249,7 +255,7 @@ class Network(BasePlot):
             else:
                 self.node_size = 20
 
-        nx.draw_networkx_edges(graph, pos, ax=ax, arrowhead=False)
+        nx.draw_networkx_edges(graph, pos, ax=ax, arrows=False)
 
         if self.directed:
             # Networkx default "directed" visualization just draws a thicker stub at the end.
@@ -276,7 +282,7 @@ class Network(BasePlot):
                 # we draw them outside the node, slightly above, with a white
                 # box behind.
                 for label, (x, y) in pos.items():
-                    ax.text(x, y+self.fontsize/3, label, ha='center', fontsize=self.fontsize, bbox={'color': 'white', 'alpha': 1})
+                    ax.text(x, y+self.fontsize, label, ha='center', fontsize=self.fontsize, bbox={'color': 'white', 'alpha': 1})
 
 class BarPlot(BasePlot):
     """
@@ -426,10 +432,11 @@ if __name__ == '__main__':
         plot([(choice('abcde'), random()*i) for i in range(50)], grid=True),
         plot([(randint(0, 100), i * random()) for i in range(100)]),
         plot([random()-0.5 for i in range(100)]),
-        plot([1+i*random() for i in range(100)], fill=True, grid=True),
+        plot([100000+i*random() for i in range(100)], fill=True, grid=True),
         plot([[i^j for i in range(250)] for j in range(150)]),
         Network([(i, randint(1, 100)) for i in range(100)]),
         Network([(choice('ABCDEFGHI'), choice('ABCDEFGHI')) for i in range(15)], directed=True, with_labels=True),
+        Network({'Alice': 'Bob', 'Bob': 'Charlie', 'Charlie': 'Alice', 'Eve': None}),
     ]
     show_grid(plots)
     
