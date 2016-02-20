@@ -237,8 +237,20 @@ class Network(BasePlot):
             if max(len(str(l)) for l in pos) <= 2:
                 nx.draw_networkx_labels(graph, pos, fontsize=self.fontsize, ax=ax)
             else:
+                edges_angles_by_label = defaultdict(list)
+                for start, end in self.data:
+                    start_x, start_y = pos[start]
+                    end_x, end_y = pos[end]
+                    angle = math.atan2(end_y-start_y, end_x-start_x)
+                    edges_angles_by_label[start].append(-angle)
+                    edges_angles_by_label[end].append(angle)
+                
                 for label, (x, y) in pos.items():
-                    ax.text(x, y+self.fontsize/3, label, ha='center', fontsize=self.fontsize, bbox={'color': 'white', 'alpha': 1})
+                    angles = edges_angles_by_label[label]
+                    vectors = [(math.cos(angle)/len(angles), math.sin(angle)/len(angles)) for angle in angles]
+                    x += sum(x for x, y in vectors) * self.fontsize
+                    y += sum(y for x, y in vectors) * self.fontsize
+                    ax.text(x, y, label, va='center', ha='center', fontsize=self.fontsize, bbox={'color': 'white', 'alpha': 1})
 
 
 class BarPlot(BasePlot):
