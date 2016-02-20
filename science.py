@@ -1,5 +1,11 @@
 """
 Matplotlib. Wrapper. Smart. Tufte. Pythonic.
+
+If you get
+"FutureWarning: elementwise comparison failed; returning scalar
+instead, but in the future will perform elementwise comparison"
+It's not my fault. Check https://github.com/matplotlib/matplotlib/issues/5209 .
+A fix should be released soon
 """
 
 import matplotlib
@@ -19,14 +25,14 @@ class BasePlot(object):
 
     def _format_data(self, data):
         is_list = lambda a: hasattr(a, '__iter__') and not isinstance(a, str)
-        if is_list(data):
+        if isinstance(data, dict):
+            return list(data.items())
+        elif is_list(data):
             data = list(data)
             if len(data) and is_list(data[0]):
                 return data
             else:
                 return list(enumerate(data))
-        elif isinstance(data, dict):
-            return list(data.items())
         else:
             raise ValueError('Unexpected data type {}'.format(type(data)))
 
@@ -114,15 +120,14 @@ class Histogram(BasePlot):
         pyplot.bar(keys, values, width=self.bars_width)
 
 class ScatterPlot(BasePlot):
-    pass
+    def _plot(self, keys, values):
+        pyplot.scatter(keys, values)
 
 class LinePlot(BasePlot):
     fill = False
 
     def _plot(self, keys, values):
         if self.fill:
-            # FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
-            # https://github.com/matplotlib/matplotlib/issues/5209
             pyplot.fill_between(keys, values)
         else:
             pyplot.plot(keys, values)
@@ -131,5 +136,5 @@ class LinePlot(BasePlot):
 if __name__ == '__main__':
     from random import randint, random
     #Histogram([100100, 100200, 100300, 100100, 100150, 100520, 100300]).show()
-    LinePlot([randint(10, 100)+random() for i in range(1000)], fill=True).show()
+    ScatterPlot({random(): randint(10, 100) for i in range(10000)}).show()
     #Plot({'a': 100, 'b': 500}).show()
