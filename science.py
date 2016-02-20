@@ -1,6 +1,10 @@
 """
 Matplotlib. Wrapper. Smart. Tufte. Pythonic.
 
+You can use either the plot classes (BarPlot, MatrixPlot, Histogram, etc) or
+call `plot(data)` and let it figure out what to do. This library tries its best
+to automatically do the right thing.
+
 If you get
 "FutureWarning: elementwise comparison failed; returning scalar
 instead, but in the future will perform elementwise comparison"
@@ -20,6 +24,11 @@ matplotlib.rcParams['xtick.direction'] = 'out'
 matplotlib.rcParams['ytick.direction'] = 'out'
 
 class BasePlot(object):
+    """
+    BasePlot doesn't actually draw anything, but configures general layout,
+    formats data to a list of (key, value) tuples, and implements the
+    `show` and `save` methods.
+    """
     grid = False
     title = ''
     xlabel = ''
@@ -27,6 +36,9 @@ class BasePlot(object):
 
     @staticmethod
     def _format_data(data):
+        """
+        Given an arbitrary data set, tries to reshape it to [(key, value)].
+        """
         if isinstance(data, dict):
             return list(data.items())
         elif is_list(data):
@@ -46,12 +58,17 @@ class BasePlot(object):
         self._apply_options(options)
 
     def _apply_options(self, options):
+        """ Loads settings from the given dictionary. """
         for option, value in options.items():
             if not hasattr(self, option):
                 raise ValueError('Invalid option: {}'.format(option))
             setattr(self, option, value)
 
     def _make_plot(self, fig=None, ax=None):
+        """
+        Make or configure the `figure` and `plot` instances, with correct
+        spacing, ticks, labels, etc.
+        """
         keys = [a for a, b in self.data]
         values = [b for a, b in self.data]
 
@@ -87,6 +104,7 @@ class BasePlot(object):
         fig.tight_layout()
 
     def _setup_margins(self, keys, values, ax):
+        """ Gives a little space between the data and the axis. """
         ax.margins(x=.02, y=0.02)
 
         # Apply Y limits and margins manually to avoid truncating unless
@@ -103,11 +121,19 @@ class BasePlot(object):
                 ax.set_ylim(ymin=-distance*0.02)
 
     def show(self):
+        """
+        Opens a GUI window showing the plot, blocking the call until the window is closed.
+        """
         self._make_plot()
         pyplot.show()
         pyplot.close()
 
     def save(self, path):
+        """
+        Saves the current plot to the given path. The format is decided based
+        on the extension. PDF format is available and generates vector
+        graphics.
+        """
         self._make_plot()
         # Remove extraneous whitespace.
         pyplot.savefig(path, bbox_inches="tight")
@@ -116,11 +142,18 @@ class TimePlot(BasePlot):
     pass
 
 class BarPlot(BasePlot):
+    """
+    Simple graph of rectangular bars. By default there is a small padding
+    between the bars. If there are fewer than `max_direct_labels` data points,
+    the y-values are rendered at the top of each bar and the y-axis omitted.
+    """
     bars_width = 0.9
+    max_direct_labels = 10
 
     def _draw(self, keys, values, ax):
+        """ Draws the bar plot and transfers y-values to bars if possible. """
         rects = ax.bar(keys, values, width=self.bars_width, align='center')
-        if len(rects) <= 10:
+        if len(rects) <= self.max_direct_labels:
             ax.spines['left'].set_visible(False)
             ax.spines['bottom'].set_visible(False)
             ax.get_yaxis().set_visible(False)
@@ -137,24 +170,39 @@ class BarPlot(BasePlot):
                 ax.text(rect.get_x() + rect.get_width()/2., y, value, ha='center', va='top')
 
 class Histogram(BarPlot):
+    """
+    A BarPlot that automatically counts distribution from the given data
+    samples, and displays with no padding between bars.
+    """
+    max_bins = 40
     def __init__(self, samples, bin=None, **options):
+        """
+        Creates a new histogram from the given samples. `bin` is the size of
+        each class, used to aggregate values, and defaults to an
+        algorithmically chosen value with up to `self.max_bins` bins.
+        """
         samples_set = sorted(set(samples))
         if bin is None:
             difs = [b - a for a, b in zip(samples_set, samples_set[1:])]
             min_dif = min(difs)
             max_dif = samples_set[-1] - samples_set[0]
             # Use the smallest difference as bin size, up to a maximum of 40.
-            bin = max(min_dif, max_dif / 40)
+            bin = max(min_dif, max_dif / self.max_bins)
 
         data = {k*bin: v for k, v in Counter(int(s/bin) for s in samples).items()}
         self.bars_width = bin
         super().__init__(data, **options)
 
 class ScatterPlot(BasePlot):
+    """ Draws a small circle on the (x, y) position of each data point. """
     def _draw(self, keys, values, ax):
         ax.scatter(keys, values)
 
 class LinePlot(BasePlot):
+    """
+    Like ScatterPlot, but draws a line between the data points. If `self.fill`
+    is True, the line forms a solid area up to the x-axis.
+    """
     fill = False
 
     def _draw(self, keys, values, ax):
@@ -164,6 +212,10 @@ class LinePlot(BasePlot):
             ax.plot(keys, values)
 
 class MatrixPlot(BasePlot):
+    """
+    A 2D plot of intensity values. Data must be a list of lists or equivalent.
+    `self.colors` is the colormap ( http://matplotlib.org/examples/color/colormaps_reference.html ).
+    """
     colors = 'cubehelix'
     def _draw(self, keys, values, ax):
         im = ax.imshow(values, interpolation='nearest', cmap=pyplot.get_cmap(self.colors))
@@ -173,6 +225,11 @@ class MatrixPlot(BasePlot):
         pass
         
 def plot(data, **options):
+    """
+    Given the raw data, selects the most appropriate type of plot and
+    constructs it with the given options. Note: it does not count
+    occurrences from samples. Use the `Histogram` class for that.
+    """
     data = BasePlot._format_data(data)
     if not len(data):
         return LinePlot(data, **options)
@@ -188,6 +245,15 @@ def plot(data, **options):
         return LinePlot(data, **options)
 
 def show_grid(plots, nrows=None):
+    """
+    Given a list or a matrix of plots, draws them in a grid layout and displays
+    in a GUI window. If the list is flat, number of rows and columns is deduced
+    automatically.
+    """
+    if is_list(plots[0]):
+        nrows = len(plots)
+        plots = sum(plots, [])
+
     if len(plots) == 1:
         return plots[0].show()
 
