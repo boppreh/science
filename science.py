@@ -126,7 +126,7 @@ class ScatterPlot(BasePlot):
         pyplot.scatter(keys, values)
 
 class LinePlot(BasePlot):
-    fill = False
+    fill = True
 
     def _plot(self, keys, values):
         if self.fill:
@@ -152,7 +152,7 @@ if __name__ == '__main__':
     #BarPlot({'Shanghai': 24256800, 'Beijing': 21516000, 'Lagos': 21324000, 'Tokyo': 13297629, 'São Paulo': 11895893}).show()
 
     from random import randint, random
-    plot([('John', 3.5), ('Mary', 4), ('Charlie', 2.2)]).show()
+    #plot([('John', 3.5), ('Mary', 4), ('Charlie', 2.2)]).show()
     #Histogram([1000100, 1000200, 1000300, 1000100, 1000150, 1000520, 1000300]).show()
     #plot([(randint(0, 100), i * random()) for i in range(10000)]).show()
-    #Plot({'a': 100, 'b': 500}).show()
+    plot([random() * 100 for i in range(100)]).show()
