@@ -17,11 +17,16 @@ from matplotlib import pyplot
 from collections import defaultdict, Counter
 import math
 
+# For flexibility purposes we accept a lot of data formats.
+# This helps distinguishing them.
 is_list = lambda a: hasattr(a, '__iter__') and not isinstance(a, str)
 
+# Use ggplot style, which I personally find much better than the default.
 pyplot.style.use('ggplot')
-matplotlib.rcParams['xtick.direction'] = 'out'
-matplotlib.rcParams['ytick.direction'] = 'out'
+
+# Draws axis ticks outside the axis line. Not necessary if using ggplot style.
+#matplotlib.rcParams['xtick.direction'] = 'out'
+#matplotlib.rcParams['ytick.direction'] = 'out'
 
 class BasePlot(object):
     """
@@ -38,17 +43,29 @@ class BasePlot(object):
     def _format_data(data):
         """
         Given an arbitrary data set, tries to reshape it to [(key, value)].
+
+        Accepted formats:
+        - [1, 2, 3] -> [(0, 1), (1, 2), (2, 3)]
+        - [(5, 1), (10, 2), (11, 3)] -> [(5, 1), (10, 2), (11, 3)]
+        - [('a', 1), ('b', 2), ('c', 3)] -> [('a', 1), ('b', 2), ('c', 3)]
+        - {5: 1, 10: 2, 11: 3} -> [(5, 1), (10, 2), (11, 3)]
+        - {'a': 1, 'b': 2, 'c': 3} -> [('a', 1), ('b', 2), ('c', 3)]
+        - [[1, 2, 3], [4, 5, 6], [7, 8, 9]] -> [(None, [1,...]), (None, [4,...]),...]
         """
         if isinstance(data, dict):
+            # Dictionary.
             return list(data.items())
         elif is_list(data):
             data = list(data)
             if len(data) and is_list(data[0]):
                 if len(data[0]) == 2:
+                    # List of (key, value) pairs.
                     return data
                 else:
+                    # Matrix.
                     return [(None, line) for line in data]
             else:
+                # List of values.
                 return list(enumerate(data))
         else:
             raise ValueError('Unexpected data type {}'.format(type(data)))
@@ -64,7 +81,7 @@ class BasePlot(object):
                 raise ValueError('Invalid option: {}'.format(option))
             setattr(self, option, value)
 
-    def _make_plot(self, fig=None, ax=None):
+    def _draw_plot(self, fig=None, ax=None):
         """
         Make or configure the `figure` and `plot` instances, with correct
         spacing, ticks, labels, etc.
@@ -75,8 +92,11 @@ class BasePlot(object):
         if fig is None:
             fig = pyplot.figure(figsize=(12, 9))
             ax = pyplot.subplot(111)
+
+        # Hide frame lines on top and right sides.
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
+
         # Ensure ticks only on left and bottom, removing top and right ticks.
         ax.get_xaxis().tick_bottom()
         ax.get_yaxis().tick_left()
@@ -85,7 +105,9 @@ class BasePlot(object):
         ax.xaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter(useOffset=False))
         ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter(useOffset=False))
 
+        # Handle non-numeric data on the x-axis.
         if isinstance(keys[0], str):
+            # Heuristic to rotate label to fit if necessary.
             rotation = 30 if len(''.join(keys)) > 80 else 0
             s = sorted(set(keys))
             num_keys = [s.index(key) for key in keys]
@@ -94,13 +116,17 @@ class BasePlot(object):
             keys = num_keys
 
         self._draw(keys, values, ax)
+        # For unknown reasons must be called *after* drawing. Otherwise the
+        # scale goes completely bonkers and doesn't show the data.
         self._setup_margins(keys, values, ax)
         
         ax.set_title(self.title)
-        ax.grid(self.grid)
         ax.set_xlabel(self.xlabel)
         ax.set_ylabel(self.ylabel)
 
+        ax.grid(self.grid)
+
+        # Resize plot to fill available space.
         fig.tight_layout()
 
     def _setup_margins(self, keys, values, ax):
@@ -108,7 +134,7 @@ class BasePlot(object):
         ax.margins(x=.02, y=0.02)
 
         # Apply Y limits and margins manually to avoid truncating unless
-        # absolutely necessary.
+        # absolutely necessary. All magical constants were eyeballed.
         max_data = max(values)
         min_data = min(values)
         distance = (max_data - min_data) or abs(min_data)
@@ -124,7 +150,7 @@ class BasePlot(object):
         """
         Opens a GUI window showing the plot, blocking the call until the window is closed.
         """
-        self._make_plot()
+        self._draw_plot()
         pyplot.show()
         pyplot.close()
 
@@ -134,7 +160,7 @@ class BasePlot(object):
         on the extension. PDF format is available and generates vector
         graphics.
         """
-        self._make_plot()
+        self._draw_plot()
         # Remove extraneous whitespace.
         pyplot.savefig(path, bbox_inches="tight")
 
@@ -153,11 +179,19 @@ class BarPlot(BasePlot):
     def _draw(self, keys, values, ax):
         """ Draws the bar plot and transfers y-values to bars if possible. """
         rects = ax.bar(keys, values, width=self.bars_width, align='center')
+
+        # If there are few bars, hide the Y-axis and put value labels directly
+        # on the bars themselves.
         if len(rects) <= self.max_direct_labels:
+            # hide both spines, but keep X-axis labels.
             ax.spines['left'].set_visible(False)
             ax.spines['bottom'].set_visible(False)
             ax.get_yaxis().set_visible(False)
             ax.xaxis.set_ticks_position('none')
+            # Uses rect geometry to figure out where to place labels. Attempts
+            # to place at the top of the bar, still inside the fill, but some
+            # bars are too short (or negative) and the label must be placed
+            # outside.
             max_height = max(rect.get_height() for rect in rects)
             for rect in rects:
                 height = rect.get_height()
@@ -261,12 +295,13 @@ def show_grid(plots, nrows=None):
     if nrows == None:
         nrows = int(math.sqrt(len(plots)))
     ncols = math.ceil(len(plots) / nrows)
-    fig, axes = pyplot.subplots(nrows=nrows, ncols=ncols)
 
+    fig, axes = pyplot.subplots(nrows=nrows, ncols=ncols)
     for ax, p in zip(axes.flat, plots):
-        p._make_plot(fig, ax)
+        p._draw_plot(fig, ax)
 
     pyplot.show()
+    pyplot.close()
 
 if __name__ == '__main__':
     from random import randint, random, sample, choice
