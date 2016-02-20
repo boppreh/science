@@ -63,6 +63,11 @@ class BasePlot(object):
         ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter(useOffset=False))
 
         if isinstance(keys[0], str):
+            if len(''.join(keys)) > 80:
+                # To avoid overlapping labels we use xdate format, which
+                # rotates each label 45 degrees counter-clockwise.
+                # The minimum number of characters is completely arbitrary.
+                fig.autofmt_xdate()
             s = sorted(set(keys))
             num_keys = [s.index(key) for key in keys]
             pyplot.xticks(num_keys, keys)
@@ -113,7 +118,7 @@ class BarPlot(BasePlot):
 
     def _plot(self, keys, values, ax):
         rects = pyplot.bar(keys, values, width=self.bars_width, align='center')
-        if len(rects) < 10:
+        if len(rects) <= 10:
             ax.spines['left'].set_visible(False)
             ax.spines['bottom'].set_visible(False)
             ax.get_yaxis().set_visible(False)
@@ -126,7 +131,8 @@ class BarPlot(BasePlot):
                     y = rect.get_y()+height - padding
                 else:
                     y = padding * 2
-                ax.text(rect.get_x() + rect.get_width()/2., y, rect.get_y() or height, ha='center', va='top', fontsize=self.fontsize)
+                value = round(rect.get_y() or height, 4)
+                ax.text(rect.get_x() + rect.get_width()/2., y, value, ha='center', va='top', fontsize=self.fontsize)
 
 class Histogram(BarPlot):
     def __init__(self, samples, bin=None, **options):
@@ -168,10 +174,11 @@ def plot(data, **options):
         return LinePlot(data, **options)
 
 if __name__ == '__main__':
-    BarPlot([('Shanghai', 24256800), ('Beijing', 21516000), ('Lagos', 21324000), ('Tokyo', 13297629), ('São Paulo', 11895893)], title='Population by city').show()
+    #plot([('Shanghai', 24256800), ('Beijing', 21516000), ('Lagos', 21324000), ('Tokyo', 13297629), ('São Paulo', 11895893)], title='Population by city').show()
 
-    from random import randint, random
-    #plot([('John', 3.5), ('Mary', 4), ('Charlie', 2.2)]).show()
+    from random import randint, random, sample
+    from string import ascii_lowercase
+    plot([(''.join(sample(ascii_lowercase, 5)), random()) for i in range(10)]).show()
     #Histogram([1000100, 1000200, 1000300, 1000100, 1000150, 1000520, 1000300]).show()
     #plot([(randint(0, 100), i * random()) for i in range(10000)]).show()
     #plot([random() * 100 for i in range(100)]).show()
