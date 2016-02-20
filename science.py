@@ -12,6 +12,8 @@ import matplotlib
 from matplotlib import pyplot
 from collections import defaultdict, Counter
 
+is_list = lambda a: hasattr(a, '__iter__') and not isinstance(a, str)
+
 class BasePlot(object):
     grid = False
     title = ''
@@ -21,13 +23,15 @@ class BasePlot(object):
 
     @staticmethod
     def _format_data(data):
-        is_list = lambda a: hasattr(a, '__iter__') and not isinstance(a, str)
         if isinstance(data, dict):
             return list(data.items())
         elif is_list(data):
             data = list(data)
             if len(data) and is_list(data[0]):
-                return data
+                if len(data[0]) == 2:
+                    return data
+                else:
+                    return [(None, line) for line in data]
             else:
                 return list(enumerate(data))
         else:
@@ -74,7 +78,19 @@ class BasePlot(object):
             keys = num_keys
 
         self._plot(keys, values, ax)
+        self._setup_margins(keys, values, ax)
+        
+        pyplot.title(self.title)
+        pyplot.grid(self.grid)
+        pyplot.xlabel(self.xlabel)
+        pyplot.ylabel(self.ylabel)
 
+        pyplot.xticks(fontsize=self.fontsize)
+        pyplot.yticks(fontsize=self.fontsize)
+
+        fig.tight_layout()
+
+    def _setup_margins(self, keys, values, ax):
         ax.margins(x=.02, y=0.02)
 
         # Apply Y limits and margins manually to avoid truncating unless
@@ -89,16 +105,6 @@ class BasePlot(object):
                 pyplot.ylim(ymin=min_data-distance*0.02)
             else:
                 pyplot.ylim(ymin=-distance*0.02)
-
-        pyplot.title(self.title)
-        pyplot.grid(self.grid)
-        pyplot.xlabel(self.xlabel)
-        pyplot.ylabel(self.ylabel)
-
-        pyplot.xticks(fontsize=self.fontsize)
-        pyplot.yticks(fontsize=self.fontsize)
-
-        fig.tight_layout()
 
     def show(self):
         self._make_figure()
@@ -159,6 +165,12 @@ class LinePlot(BasePlot):
         else:
             pyplot.plot(keys, values)
 
+class MatrixPlot(BasePlot):
+    def _plot(self, keys, values, ax):
+        pyplot.imshow(values, interpolation='nearest')
+
+    def _setup_margins(self, keys, values, ax):
+        pass
         
 def plot(data, **options):
     data = BasePlot._format_data(data)
@@ -166,7 +178,9 @@ def plot(data, **options):
         return LinePlot(data, **options)
 
     keys = [a for a, b in data]
-    if len(keys) != len(set(keys)):
+    if is_list(data[0][1]) and len(data[0][1]) > 2:
+        return MatrixPlot(data, **options)
+    elif len(keys) != len(set(keys)):
         return ScatterPlot(data, **options)
     elif isinstance(data[0][0], str):
         return BarPlot(data, **options)
@@ -178,7 +192,8 @@ if __name__ == '__main__':
 
     from random import randint, random, sample
     from string import ascii_lowercase
-    #plot([(''.join(sample(ascii_lowercase, 5)), random()) for i in range(10)]).show()
-    #Histogram([1000100, 1000200, 1000300, 1000100, 1000150, 1000520, 1000300]).show()
-    #plot([(randint(0, 100), i * random()) for i in range(10000)]).show()
-    #plot([random() * 100 for i in range(100)]).show()
+    plot([(''.join(sample(ascii_lowercase, 5)), random()) for i in range(10)]).show()
+    Histogram([1000100, 1000200, 1000300, 1000100, 1000150, 1000520, 1000300]).show()
+    plot([(randint(0, 100), i * random()) for i in range(10000)]).show()
+    plot([random() * 100 for i in range(100)]).show()
+    plot([[i^j for i in range(100)] for j in range(100)]).show()
