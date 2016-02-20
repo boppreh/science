@@ -81,7 +81,7 @@ class BasePlot(object):
         self._plot(keys, values, ax)
         self._setup_margins(keys, values, ax)
         
-        pyplot.title(self.title)
+        pyplot.title(self.title, fontsize=self.fontsize)
         pyplot.grid(self.grid)
         pyplot.xlabel(self.xlabel)
         pyplot.ylabel(self.ylabel)
@@ -164,6 +164,7 @@ class MatrixPlot(BasePlot):
     colors = 'cubehelix'
     def _plot(self, keys, values, ax):
         pyplot.imshow(values, interpolation='nearest', cmap=pyplot.get_cmap(self.colors))
+        pyplot.colorbar()
 
     def _setup_margins(self, keys, values, ax):
         pass
