@@ -160,8 +160,9 @@ class LinePlot(BasePlot):
             pyplot.plot(keys, values)
 
 class MatrixPlot(BasePlot):
+    colors = 'hot'
     def _plot(self, keys, values, ax):
-        pyplot.imshow(values, interpolation='nearest')
+        pyplot.imshow(values, interpolation='nearest', cmap=pyplot.get_cmap(self.colors))
 
     def _setup_margins(self, keys, values, ax):
         pass
@@ -192,12 +193,12 @@ def count(samples, bin=None):
     return data, bin
 
 if __name__ == '__main__':
-    plot([('Shanghai', 24256800), ('Beijing', 21516000), ('Lagos', 21324000), ('Tokyo', 13297629), ('São Paulo', 11895893)], title='Population by city').show()
+    #plot([('Shanghai', 24256800), ('Beijing', 21516000), ('Lagos', 21324000), ('Tokyo', 13297629), ('São Paulo', 11895893)], title='Population by city').show()
 
     from random import randint, random, sample
     from string import ascii_lowercase
-    plot([(''.join(sample(ascii_lowercase, 5)), random()) for i in range(10)]).show()
-    Histogram([1000100, 1000200, 1000300, 1000100, 1000150, 1000520, 1000300]).show()
-    plot([(randint(0, 100), i * random()) for i in range(10000)]).show()
-    plot([random() * 100 for i in range(100)]).show()
+    #plot([(''.join(sample(ascii_lowercase, 5)), random()) for i in range(10)]).show()
+    #plot(count([randint(1000, 1010) for i in range(1000)])).show()
+    #plot([(randint(0, 100), i * random()) for i in range(10000)]).show()
+    #plot([0.1+random() ** 0.5 for i in range(100)]).show()
     plot([[i^j for i in range(100)] for j in range(100)]).show()
