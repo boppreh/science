@@ -57,6 +57,15 @@ class BasePlot(object):
         ax.get_xaxis().tick_bottom()
         ax.get_yaxis().tick_left()
 
+        # Show full value in ticks, instead of using an offset.
+        ax.xaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter(useOffset=False))
+        ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter(useOffset=False))
+
+        if isinstance(keys[0], str):
+            s = sorted(set(keys))
+            num_keys = [s.index(key) for key in keys]
+            pyplot.xticks(num_keys, keys)
+            keys = num_keys
         self._plot(keys, values)
 
         ax.margins(x=.02, y=0.02)
@@ -76,10 +85,6 @@ class BasePlot(object):
         pyplot.xlabel(self.xlabel)
         pyplot.ylabel(self.ylabel)
 
-        # Show full value in ticks, instead of using an offset.
-        ax.xaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter(useOffset=False))
-        ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter(useOffset=False))
-
         pyplot.xticks(fontsize=14)
         pyplot.yticks(fontsize=14)
 
@@ -98,7 +103,13 @@ class BasePlot(object):
 class TimePlot(BasePlot):
     pass
 
-class Histogram(BasePlot):
+class BarPlot(BasePlot):
+    bars_width = 0.9
+
+    def _plot(self, keys, values):
+        pyplot.bar(keys, values, width=self.bars_width, align='center')
+
+class Histogram(BarPlot):
     def __init__(self, samples, bin=None, **options):
         samples_set = sorted(set(samples))
         if bin is None:
@@ -106,12 +117,9 @@ class Histogram(BasePlot):
             # Use the smallest difference as bin size, up to a maximum of 40.
             bin = max(min(difs), int((samples_set[-1] - samples_set[0]) / 40))
 
-        data = {(k-0.5)*bin: v for k, v in Counter(int(s/bin) for s in samples).items()}
+        data = {k*bin: v for k, v in Counter(int(s/bin) for s in samples).items()}
         self.bars_width = bin
         super().__init__(data, **options)
-
-    def _plot(self, keys, values):
-        pyplot.bar(keys, values, width=self.bars_width)
 
 class ScatterPlot(BasePlot):
     def _plot(self, keys, values):
@@ -125,18 +133,26 @@ class LinePlot(BasePlot):
             pyplot.fill_between(keys, values)
         else:
             pyplot.plot(keys, values)
+
         
 def plot(data, **options):
     data = BasePlot._format_data(data)
+    if not len(data):
+        return LinePlot(data, **options)
+
     keys = [a for a, b in data]
     if len(keys) != len(set(keys)):
         return ScatterPlot(data, **options)
+    elif isinstance(data[0][0], str):
+        return BarPlot(data, **options)
     else:
         return LinePlot(data, **options)
 
 if __name__ == '__main__':
+    #BarPlot({'Shanghai': 24256800, 'Beijing': 21516000, 'Lagos': 21324000, 'Tokyo': 13297629, 'São Paulo': 11895893}).show()
+
     from random import randint, random
-    plot([1000100, 1000200, 1000300, 1000100, 1000150, 1000520, 1000300]).show()
-    plot([(randint(0, 100), i * random()) for i in range(10000)]).show()
-    plot(range(1000, 2000)).show()
+    plot([('John', 3.5), ('Mary', 4), ('Charlie', 2.2)]).show()
+    #Histogram([1000100, 1000200, 1000300, 1000100, 1000150, 1000520, 1000300]).show()
+    #plot([(randint(0, 100), i * random()) for i in range(10000)]).show()
     #Plot({'a': 100, 'b': 500}).show()
