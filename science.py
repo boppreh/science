@@ -138,7 +138,13 @@ class BarPlot(BasePlot):
 
 class Histogram(BarPlot):
     def __init__(self, samples, bin=None, **options):
-        data, bin = count(samples, bin)
+        samples_set = sorted(set(samples))
+        if bin is None:
+            difs = [b - a for a, b in zip(samples_set, samples_set[1:])]
+            # Use the smallest difference as bin size, up to a maximum of 40.
+            bin = max(min(difs), int((samples_set[-1] - samples_set[0]) / 40))
+
+        data = {k*bin: v for k, v in Counter(int(s/bin) for s in samples).items()}
         self.bars_width = bin
         super().__init__(data, **options)
 
@@ -179,16 +185,6 @@ def plot(data, **options):
     else:
         return LinePlot(data, **options)
 
-def count(samples, bin=None):
-    samples_set = sorted(set(samples))
-    if bin is None:
-        difs = [b - a for a, b in zip(samples_set, samples_set[1:])]
-        # Use the smallest difference as bin size, up to a maximum of 40.
-        bin = max(min(difs), int((samples_set[-1] - samples_set[0]) / 40))
-
-    data = {k*bin: v for k, v in Counter(int(s/bin) for s in samples).items()}
-    return data, bin
-
 def show_grid(plots, nrows=None):
     plots = list(plots)
     if nrows == None:
@@ -213,5 +209,5 @@ if __name__ == '__main__':
         plot([0.1+random() ** 0.5 for i in range(100)]),
         plot([[i^j for i in range(100)] for j in range(100)]),
     ]
-    show_grid(plots * 2)
+    show_grid(plots)
     
