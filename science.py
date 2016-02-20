@@ -51,7 +51,6 @@ class BasePlot(object):
 
         fig = pyplot.figure(figsize=(12, 9))
         ax = pyplot.subplot(111)
-        ax.margins(x=.01, y=.01)
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         # Ensure ticks only on left and bottom, removing top and right ticks.
@@ -59,6 +58,18 @@ class BasePlot(object):
         ax.get_yaxis().tick_left()
 
         self._plot(keys, values)
+
+        ax.margins(x=.02, y=0.02)
+
+        # Apply Y limits and margins manually to avoid truncating unless
+        # absolutely necessary.
+        max_data = max(values)
+        min_data = min(values)
+        distance = (max_data - min_data) or abs(min_data)
+        if 0 < distance < 0.01 * min_data:
+            pyplot.ylim(min_data - distance * 0.4, max_data + distance * 0.4)
+        else:
+            pyplot.ylim(ymin=-distance*0.02)
 
         pyplot.title(self.title)
         pyplot.grid(self.grid)
@@ -125,7 +136,7 @@ def plot(data, **options):
 
 if __name__ == '__main__':
     from random import randint, random
-    Histogram([100100, 100200, 100300, 100100, 100150, 100520, 100300]).show()
+    plot([1000100, 1000200, 1000300, 1000100, 1000150, 1000520, 1000300]).show()
     plot([(randint(0, 100), i * random()) for i in range(10000)]).show()
-    plot(range(1000)).show()
+    plot(range(1000, 2000)).show()
     #Plot({'a': 100, 'b': 500}).show()
