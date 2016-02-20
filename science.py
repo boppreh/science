@@ -161,7 +161,7 @@ class LinePlot(BasePlot):
             pyplot.plot(keys, values)
 
 class MatrixPlot(BasePlot):
-    colors = 'hot'
+    colors = 'cubehelix'
     def _plot(self, keys, values, ax):
         pyplot.imshow(values, interpolation='nearest', cmap=pyplot.get_cmap(self.colors))
 
@@ -198,8 +198,8 @@ if __name__ == '__main__':
 
     from random import randint, random, sample
     from string import ascii_lowercase
-    Histogram([randint(1000, 1010) for i in range(1000)]).show()
-    plot([(''.join(sample(ascii_lowercase, 5)), random()) for i in range(10)]).show()
-    plot([(randint(0, 100), i * random()) for i in range(10000)]).show()
-    plot([0.1+random() ** 0.5 for i in range(100)]).show()
+    #Histogram([randint(1000, 1010) for i in range(1000)]).show()
+    #plot([(''.join(sample(ascii_lowercase, 5)), random()) for i in range(10)]).show()
+    #plot([(randint(0, 100), i * random()) for i in range(10000)]).show()
+    #plot([0.1+random() ** 0.5 for i in range(100)]).show()
     plot([[i^j for i in range(100)] for j in range(100)]).show()
