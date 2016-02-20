@@ -141,8 +141,10 @@ class Histogram(BarPlot):
         samples_set = sorted(set(samples))
         if bin is None:
             difs = [b - a for a, b in zip(samples_set, samples_set[1:])]
+            min_dif = min(difs)
+            max_dif = samples_set[-1] - samples_set[0]
             # Use the smallest difference as bin size, up to a maximum of 40.
-            bin = max(min(difs), int((samples_set[-1] - samples_set[0]) / 40))
+            bin = max(min_dif, max_dif / 40)
 
         data = {k*bin: v for k, v in Counter(int(s/bin) for s in samples).items()}
         self.bars_width = bin
@@ -153,7 +155,7 @@ class ScatterPlot(BasePlot):
         ax.scatter(keys, values)
 
 class LinePlot(BasePlot):
-    fill = True
+    fill = False
 
     def _draw(self, keys, values, ax):
         if self.fill:
@@ -186,6 +188,9 @@ def plot(data, **options):
         return LinePlot(data, **options)
 
 def show_grid(plots, nrows=None):
+    if len(plots) == 1:
+        return plots[0].show()
+
     plots = list(plots)
     if nrows == None:
         nrows = int(math.sqrt(len(plots)))
@@ -198,16 +203,19 @@ def show_grid(plots, nrows=None):
     pyplot.show()
 
 if __name__ == '__main__':
-    from random import randint, random, sample
+    from random import randint, random, sample, choice
     from string import ascii_lowercase
 
     plots = [
         plot([('Shanghai', 24256800), ('Beijing', 21516000), ('Lagos', 21324000), ('Tokyo', 13297629), ('São Paulo', 11895893)]),
+        Histogram([random()*random()+random() for i in range(1000)]),
         Histogram([randint(1000, 1010) for i in range(1000)]),
         plot([(''.join(sample(ascii_lowercase, 5)), random()) for i in range(17)]),
-        plot([(randint(0, 100), i * random()) for i in range(10000)]),
-        plot([0.1+random() ** 0.5 for i in range(100)]),
-        plot([[i^j for i in range(100)] for j in range(100)]),
+        plot([(choice('abcde'), random()*i) for i in range(50)]),
+        plot([(randint(0, 100), i * random()) for i in range(100)]),
+        plot([random()-0.5 for i in range(100)]),
+        plot([1+i*random() for i in range(100)], fill=True),
+        plot([[i^j for i in range(250)] for j in range(150)]),
     ]
     show_grid(plots)
     
