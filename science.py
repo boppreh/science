@@ -80,7 +80,10 @@ class BasePlot(object):
         if 0 < distance < 0.01 * min_data:
             pyplot.ylim(min_data - distance * 0.4, max_data + distance * 0.4)
         else:
-            pyplot.ylim(ymin=-distance*0.02)
+            if min_data < 0:
+                pyplot.ylim(ymin=min_data-distance*0.02)
+            else:
+                pyplot.ylim(ymin=-distance*0.02)
 
         pyplot.title(self.title)
         pyplot.grid(self.grid)
@@ -160,7 +163,8 @@ def plot(data, **options):
         return LinePlot(data, **options)
 
 if __name__ == '__main__':
-    BarPlot({'Shanghai': 24256800, 'Beijing': 21516000, 'Lagos': 21324000, 'Tokyo': 13297629, 'São Paulo': 11895893}).show()
+    #BarPlot({'Shanghai': 24256800, 'Beijing': 21516000, 'Lagos': 21324000, 'Tokyo': 13297629, 'São Paulo': 11895893}).show()
+    LinePlot([10, 5, -2]).show()
 
     from random import randint, random
     #plot([('John', 3.5), ('Mary', 4), ('Charlie', 2.2)]).show()
