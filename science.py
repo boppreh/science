@@ -142,13 +142,7 @@ class BarPlot(BasePlot):
 
 class Histogram(BarPlot):
     def __init__(self, samples, bin=None, **options):
-        samples_set = sorted(set(samples))
-        if bin is None:
-            difs = [b - a for a, b in zip(samples_set, samples_set[1:])]
-            # Use the smallest difference as bin size, up to a maximum of 40.
-            bin = max(min(difs), int((samples_set[-1] - samples_set[0]) / 40))
-
-        data = {k*bin: v for k, v in Counter(int(s/bin) for s in samples).items()}
+        data, bin = count(samples, bin)
         self.bars_width = bin
         super().__init__(data, **options)
 
@@ -186,6 +180,16 @@ def plot(data, **options):
         return BarPlot(data, **options)
     else:
         return LinePlot(data, **options)
+
+def count(samples, bin=None):
+    samples_set = sorted(set(samples))
+    if bin is None:
+        difs = [b - a for a, b in zip(samples_set, samples_set[1:])]
+        # Use the smallest difference as bin size, up to a maximum of 40.
+        bin = max(min(difs), int((samples_set[-1] - samples_set[0]) / 40))
+
+    data = {k*bin: v for k, v in Counter(int(s/bin) for s in samples).items()}
+    return data, bin
 
 if __name__ == '__main__':
     plot([('Shanghai', 24256800), ('Beijing', 21516000), ('Lagos', 21324000), ('Tokyo', 13297629), ('São Paulo', 11895893)], title='Population by city').show()
