@@ -121,7 +121,12 @@ class BarPlot(BasePlot):
             max_height = max(rect.get_height() for rect in rects)
             for rect in rects:
                 height = rect.get_height()
-                ax.text(rect.get_x() + rect.get_width()/2., rect.get_y()+height+max_height*0.01, rect.get_y() or height, ha='center', va='bottom', fontsize=self.fontsize)
+                padding = max_height * 0.03
+                if height > padding * 2:
+                    y = rect.get_y()+height - padding
+                else:
+                    y = padding * 2
+                ax.text(rect.get_x() + rect.get_width()/2., y, rect.get_y() or height, ha='center', va='top', fontsize=self.fontsize)
 
 class Histogram(BarPlot):
     def __init__(self, samples, bin=None, **options):
@@ -163,8 +168,7 @@ def plot(data, **options):
         return LinePlot(data, **options)
 
 if __name__ == '__main__':
-    #BarPlot({'Shanghai': 24256800, 'Beijing': 21516000, 'Lagos': 21324000, 'Tokyo': 13297629, 'São Paulo': 11895893}).show()
-    LinePlot([10, 5, -2]).show()
+    BarPlot([('Shanghai', 24256800), ('Beijing', 21516000), ('Lagos', 21324000), ('Tokyo', 13297629), ('São Paulo', 11895893)], title='Population by city').show()
 
     from random import randint, random
     #plot([('John', 3.5), ('Mary', 4), ('Charlie', 2.2)]).show()
