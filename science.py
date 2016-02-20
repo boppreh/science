@@ -17,13 +17,9 @@ class BasePlot(object):
     title = ''
     xlabel = ''
     ylabel = ''
-    extra_width = 0
 
-    def __init__(self, data, **options):
-        self.data = self._format_data(data)
-        self._apply_options(options)
-
-    def _format_data(self, data):
+    @staticmethod
+    def _format_data(data):
         is_list = lambda a: hasattr(a, '__iter__') and not isinstance(a, str)
         if isinstance(data, dict):
             return list(data.items())
@@ -35,6 +31,10 @@ class BasePlot(object):
                 return list(enumerate(data))
         else:
             raise ValueError('Unexpected data type {}'.format(type(data)))
+
+    def __init__(self, data, **options):
+        self.data = self._format_data(data)
+        self._apply_options(options)
 
     def _apply_options(self, options):
         for option, value in options.items():
@@ -51,13 +51,12 @@ class BasePlot(object):
 
         fig = pyplot.figure(figsize=(12, 9))
         ax = pyplot.subplot(111)
+        ax.margins(x=.01, y=.01)
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         # Ensure ticks only on left and bottom, removing top and right ticks.
         ax.get_xaxis().tick_bottom()
         ax.get_yaxis().tick_left()
-
-        args = {}
 
         self._plot(keys, values)
 
@@ -65,19 +64,6 @@ class BasePlot(object):
         pyplot.grid(self.grid)
         pyplot.xlabel(self.xlabel)
         pyplot.ylabel(self.ylabel)
-        max_data = max(values)
-        min_data = min(values)
-        # Avoid trncating Y axis unless absolutely necessary.
-        distance = max_data - min_data
-        if distance == 0:
-            pass
-        elif distance > 0.01 * min_data:
-            pyplot.ylim(0, max_data)
-        else:
-            pyplot.ylim(min_data - distance * 0.3, max_data + distance * 0.3)
-
-        # Fix x-axis, including final bar if necessary.
-        pyplot.xlim(min(keys), max(keys)+self.extra_width)
 
         # Show full value in ticks, instead of using an offset.
         ax.xaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter(useOffset=False))
@@ -110,10 +96,7 @@ class Histogram(BasePlot):
             bin = max(min(difs), int((samples_set[-1] - samples_set[0]) / 40))
 
         data = {(k-0.5)*bin: v for k, v in Counter(int(s/bin) for s in samples).items()}
-        print(bin)
         self.bars_width = bin
-        print(bin)
-        self.extra_width = self.bars_width
         super().__init__(data, **options)
 
     def _plot(self, keys, values):
@@ -132,9 +115,17 @@ class LinePlot(BasePlot):
         else:
             pyplot.plot(keys, values)
         
+def plot(data, **options):
+    data = BasePlot._format_data(data)
+    keys = [a for a, b in data]
+    if len(keys) != len(set(keys)):
+        return ScatterPlot(data, **options)
+    else:
+        return LinePlot(data, **options)
 
 if __name__ == '__main__':
     from random import randint, random
-    #Histogram([100100, 100200, 100300, 100100, 100150, 100520, 100300]).show()
-    ScatterPlot({random(): randint(10, 100) for i in range(10000)}).show()
+    Histogram([100100, 100200, 100300, 100100, 100150, 100520, 100300]).show()
+    plot([(randint(0, 100), i * random()) for i in range(10000)]).show()
+    plot(range(1000)).show()
     #Plot({'a': 100, 'b': 500}).show()
