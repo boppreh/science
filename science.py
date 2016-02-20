@@ -11,15 +11,19 @@ A fix should be released soon
 import matplotlib
 from matplotlib import pyplot
 from collections import defaultdict, Counter
+import math
 
 is_list = lambda a: hasattr(a, '__iter__') and not isinstance(a, str)
+
+pyplot.style.use('ggplot')
+matplotlib.rcParams['xtick.direction'] = 'out'
+matplotlib.rcParams['ytick.direction'] = 'out'
 
 class BasePlot(object):
     grid = False
     title = ''
     xlabel = ''
     ylabel = ''
-    fontsize = 14
 
     @staticmethod
     def _format_data(data):
@@ -47,16 +51,13 @@ class BasePlot(object):
                 raise ValueError('Invalid option: {}'.format(option))
             setattr(self, option, value)
 
-    def _make_figure(self):
-        pyplot.style.use('ggplot')
+    def _make_plot(self, fig=None, ax=None):
         keys = [a for a, b in self.data]
         values = [b for a, b in self.data]
 
-        matplotlib.rcParams['xtick.direction'] = 'out'
-        matplotlib.rcParams['ytick.direction'] = 'out'
-
-        fig = pyplot.figure(figsize=(12, 9))
-        ax = pyplot.subplot(111)
+        if fig is None:
+            fig = pyplot.figure(figsize=(12, 9))
+            ax = pyplot.subplot(111)
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         # Ensure ticks only on left and bottom, removing top and right ticks.
@@ -68,26 +69,20 @@ class BasePlot(object):
         ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter(useOffset=False))
 
         if isinstance(keys[0], str):
-            if len(''.join(keys)) > 80:
-                # To avoid overlapping labels we use xdate format, which
-                # rotates each label 45 degrees counter-clockwise.
-                # The minimum number of characters is completely arbitrary.
-                fig.autofmt_xdate()
+            rotation = 30 if len(''.join(keys)) > 80 else 0
             s = sorted(set(keys))
             num_keys = [s.index(key) for key in keys]
-            pyplot.xticks(num_keys, keys)
+            ax.set_xticks(num_keys)
+            ax.set_xticklabels(keys, rotation=rotation)
             keys = num_keys
 
-        self._plot(keys, values, ax)
+        self._draw(keys, values, ax)
         self._setup_margins(keys, values, ax)
         
-        pyplot.title(self.title, fontsize=self.fontsize)
-        pyplot.grid(self.grid)
-        pyplot.xlabel(self.xlabel)
-        pyplot.ylabel(self.ylabel)
-
-        pyplot.xticks(fontsize=self.fontsize)
-        pyplot.yticks(fontsize=self.fontsize)
+        ax.set_title(self.title)
+        ax.grid(self.grid)
+        ax.set_xlabel(self.xlabel)
+        ax.set_ylabel(self.ylabel)
 
         fig.tight_layout()
 
@@ -100,20 +95,20 @@ class BasePlot(object):
         min_data = min(values)
         distance = (max_data - min_data) or abs(min_data)
         if 0 < distance < 0.01 * min_data:
-            pyplot.ylim(min_data - distance * 0.4, max_data + distance * 0.4)
+            ax.set_ylim(min_data - distance * 0.4, max_data + distance * 0.4)
         else:
             if min_data < 0:
-                pyplot.ylim(ymin=min_data-distance*0.02)
+                ax.set_ylim(ymin=min_data-distance*0.02)
             else:
-                pyplot.ylim(ymin=-distance*0.02)
+                ax.set_ylim(ymin=-distance*0.02)
 
     def show(self):
-        self._make_figure()
+        self._make_plot()
         pyplot.show()
         pyplot.close()
 
     def save(self, path):
-        self._make_figure()
+        self._make_plot()
         # Remove extraneous whitespace.
         pyplot.savefig(path, bbox_inches="tight")
 
@@ -123,8 +118,8 @@ class TimePlot(BasePlot):
 class BarPlot(BasePlot):
     bars_width = 0.9
 
-    def _plot(self, keys, values, ax):
-        rects = pyplot.bar(keys, values, width=self.bars_width, align='center')
+    def _draw(self, keys, values, ax):
+        rects = ax.bar(keys, values, width=self.bars_width, align='center')
         if len(rects) <= 10:
             ax.spines['left'].set_visible(False)
             ax.spines['bottom'].set_visible(False)
@@ -139,7 +134,7 @@ class BarPlot(BasePlot):
                 else:
                     y = rect.get_y()+height + padding * 2
                 value = round(rect.get_y() or height, 4)
-                ax.text(rect.get_x() + rect.get_width()/2., y, value, ha='center', va='top', fontsize=self.fontsize)
+                ax.text(rect.get_x() + rect.get_width()/2., y, value, ha='center', va='top')
 
 class Histogram(BarPlot):
     def __init__(self, samples, bin=None, **options):
@@ -148,23 +143,23 @@ class Histogram(BarPlot):
         super().__init__(data, **options)
 
 class ScatterPlot(BasePlot):
-    def _plot(self, keys, values, ax):
-        pyplot.scatter(keys, values)
+    def _draw(self, keys, values, ax):
+        ax.scatter(keys, values)
 
 class LinePlot(BasePlot):
     fill = True
 
-    def _plot(self, keys, values, ax):
+    def _draw(self, keys, values, ax):
         if self.fill:
-            pyplot.fill_between(keys, values)
+            ax.fill_between(keys, values)
         else:
-            pyplot.plot(keys, values)
+            ax.plot(keys, values)
 
 class MatrixPlot(BasePlot):
     colors = 'cubehelix'
-    def _plot(self, keys, values, ax):
-        pyplot.imshow(values, interpolation='nearest', cmap=pyplot.get_cmap(self.colors))
-        pyplot.colorbar()
+    def _draw(self, keys, values, ax):
+        im = ax.imshow(values, interpolation='nearest', cmap=pyplot.get_cmap(self.colors))
+        pyplot.colorbar(im, ax=ax)
 
     def _setup_margins(self, keys, values, ax):
         pass
@@ -194,13 +189,29 @@ def count(samples, bin=None):
     data = {k*bin: v for k, v in Counter(int(s/bin) for s in samples).items()}
     return data, bin
 
-if __name__ == '__main__':
-    #plot([('Shanghai', 24256800), ('Beijing', 21516000), ('Lagos', 21324000), ('Tokyo', 13297629), ('São Paulo', 11895893)], title='Population by city').show()
+def show_grid(plots, nrows=None):
+    plots = list(plots)
+    if nrows == None:
+        nrows = int(math.sqrt(len(plots)))
+    ncols = math.ceil(len(plots) / nrows)
+    fig, axes = pyplot.subplots(nrows=nrows, ncols=ncols)
 
+    for ax, p in zip(axes.flat, plots):
+        p._make_plot(fig, ax)
+
+    pyplot.show()
+
+if __name__ == '__main__':
     from random import randint, random, sample
     from string import ascii_lowercase
-    #Histogram([randint(1000, 1010) for i in range(1000)]).show()
-    #plot([(''.join(sample(ascii_lowercase, 5)), random()) for i in range(10)]).show()
-    #plot([(randint(0, 100), i * random()) for i in range(10000)]).show()
-    #plot([0.1+random() ** 0.5 for i in range(100)]).show()
-    plot([[i^j for i in range(100)] for j in range(100)]).show()
+
+    plots = [
+        plot([('Shanghai', 24256800), ('Beijing', 21516000), ('Lagos', 21324000), ('Tokyo', 13297629), ('São Paulo', 11895893)]),
+        Histogram([randint(1000, 1010) for i in range(1000)]),
+        plot([(''.join(sample(ascii_lowercase, 5)), random()) for i in range(17)]),
+        plot([(randint(0, 100), i * random()) for i in range(10000)]),
+        plot([0.1+random() ** 0.5 for i in range(100)]),
+        plot([[i^j for i in range(100)] for j in range(100)]),
+    ]
+    show_grid(plots * 2)
+    
