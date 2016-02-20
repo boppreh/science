@@ -428,6 +428,8 @@ def show_grid(plots, nrows=None):
         nrows = len(plots)
         plots = sum(plots, [])
 
+    plots = list(plots)
+
     if len(plots) == 1:
         return plots[0].show()
 
@@ -446,6 +448,8 @@ def show_grid(plots, nrows=None):
 if __name__ == '__main__':
     from random import randint, random, sample, choice, shuffle
     from string import ascii_lowercase, ascii_uppercase
+
+    # show_grid([Network(zip(range(100), sample(range(100), 100))) for i in range(9)])
 
     plots = [
         plot([('Shanghai', 24256800), ('Beijing', 21516000), ('Lagos', 21324000), ('Tokyo', 13297629), ('São Paulo', 11895893)]),
