@@ -187,8 +187,6 @@ class Network(BasePlot):
     node_size = None
     with_labels = False
     directed = False
-    arrowstyle = '-|>' # http://matplotlib.org/api/patches_api.html?highlight=fancyarrowpatch#matplotlib.patches.FancyArrowPatch
-    node_color = 'r'
 
     def _draw_plot(self, fig=None, ax=None):
         import networkx as nx
@@ -228,11 +226,11 @@ class Network(BasePlot):
                 angle = math.atan2(end_y-start_y, end_x-start_x)
                 distance = math.sqrt((end_x - start_x)**2 + (end_y - start_y)**2)
                 end_pos = (end_x - 0.1 * distance * math.cos(angle), end_y - 0.1 * distance * math.sin(angle))
+                print(distance, self.node_size)
                 ax.add_patch(FancyArrowPatch(posA=(start_x, start_y), posB=end_pos,
-                                    color='k', arrowstyle=self.arrowstyle,
+                                    color='k', arrowstyle='-|>',
                                     mutation_scale=30, connectionstyle="arc3"))
-
-        nx.draw_networkx_nodes(graph, pos, node_size=self.node_size, ax=ax, node_color=self.node_color, cmap=self.cmap)
+        nx.draw_networkx_nodes(graph, pos, node_size=self.node_size, ax=ax, cmap=self.cmap)
         if self.with_labels:
             if max(len(str(l)) for l in pos) <= 2:
                 nx.draw_networkx_labels(graph, pos, fontsize=self.fontsize, ax=ax)
@@ -246,11 +244,7 @@ class Network(BasePlot):
                     edges_angles_by_label[end].append(angle)
                 
                 for label, (x, y) in pos.items():
-                    angles = edges_angles_by_label[label]
-                    vectors = [(math.cos(angle)/len(angles), math.sin(angle)/len(angles)) for angle in angles]
-                    x += sum(x for x, y in vectors) * self.fontsize
-                    y += sum(y for x, y in vectors) * self.fontsize
-                    ax.text(x, y, label, va='center', ha='center', fontsize=self.fontsize, bbox={'color': 'white', 'alpha': 1})
+                    ax.text(x, y+self.fontsize/3, label, ha='center', fontsize=self.fontsize)
 
 
 class BarPlot(BasePlot):
