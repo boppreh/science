@@ -135,15 +135,11 @@ class BasePlot(object):
             ax.set_xticks(num_keys)
             ax.set_xticklabels(keys, rotation=rotation)
             keys = num_keys
-            
-        #ax.get_xaxis().set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: format(x, ',')))
-        #ax.get_yaxis().set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: format(x, ',')))
-
-         #matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ','))
 
         self._draw(keys, values, ax)
-        # For unknown reasons must be called *after* drawing. Otherwise the
-        # scale goes completely bonkers and doesn't show the data.
+
+        # Must be called *after* drawing the data, otherwise we don't know
+        # what to scale to.
         self._setup_margins(keys, values, ax)
         
         ax.set_title(self.title)
@@ -216,6 +212,9 @@ class Network(BasePlot):
 
     @property
     def graph(self):
+        """
+        Returns a NetworkX graph object, useful for checking properties.
+        """
         import networkx as nx
         graph = nx.MultiDiGraph()
 
@@ -228,6 +227,10 @@ class Network(BasePlot):
         return graph
 
     def _draw_dot_plot(self, fig=None, ax=None):
+        """
+        Uses graphviz's "dot" to generate a PNG image and draw on the given
+        fig.
+        """
         import networkx
 
         if fig is None:
