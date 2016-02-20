@@ -38,6 +38,8 @@ class BasePlot(object):
     title = ''
     xlabel = ''
     ylabel = ''
+    fontsize = 14
+    colors = 'cubehelix'
 
     @staticmethod
     def _format_data(data):
@@ -164,8 +166,78 @@ class BasePlot(object):
         # Remove extraneous whitespace.
         pyplot.savefig(path, bbox_inches="tight")
 
+    @property
+    def cmap(self):
+        return pyplot.get_cmap(self.colors)
+    
+
 class TimePlot(BasePlot):
     pass
+
+class Network(BasePlot):
+    """
+
+    Windows installation instructions: install `pydotplus` and the latest
+    version of graphviz from http://www.graphviz.org/pub/graphviz/stable/windows/
+    ( http://www.graphviz.org/pub/graphviz/stable/windows/graphviz-2.38.msi
+    as of 2016-02). You may have to add `C:\Program Files (x86)\Graphviz2.38\bin`
+    to your path manually.
+    """
+    layout = 'neato'
+    node_size = None
+    with_labels = False
+    directed = False
+
+    def _draw_plot(self, fig=None, ax=None):
+        import networkx as nx
+        from networkx.drawing.nx_pydot import graphviz_layout, pydot_layout
+        from matplotlib.patches import FancyArrowPatch
+
+        graph = nx.Graph()
+
+        for start, end in self.data:
+            if end is None:
+                graph.add_node(start)
+            else:
+                graph.add_edge(start, end)
+
+        try:
+            pos = graphviz_layout(graph)
+        except:
+            pos = nx.spring_layout(graph, iterations=20)
+            
+        if fig is None:
+            fig = pyplot.figure(figsize=(8,8))
+            ax = pyplot.subplot(111)
+        ax.axis('off')
+        
+        if self.node_size is None:
+            if self.with_labels:
+                self.node_size = 300
+            else:
+                self.node_size = 20
+
+        #nx.draw_networkx(graph, pos, node_size=self.node_size, ax=ax, cmap=self.cmap, with_labels=self.with_labels)
+        nx.draw_networkx_edges(graph, pos, ax=ax, arrowhead=False)
+        if self.directed:
+            for start, end in self.data:
+                start_x, start_y = pos[start]
+                end_x, end_y = pos[end]
+                angle = math.atan2(end_y-start_y, end_x-start_x)
+                distance = math.sqrt((end_x - start_x)**2 + (end_y - start_y)**2)
+                end_pos = (end_x - 0.1 * distance * math.cos(angle), end_y - 0.1 * distance * math.sin(angle))
+                print(distance, self.node_size)
+                ax.add_patch(FancyArrowPatch(posA=(start_x, start_y), posB=end_pos,
+                                    color='k', arrowstyle='-|>',
+                                    mutation_scale=30, connectionstyle="arc3"))
+        nx.draw_networkx_nodes(graph, pos, node_size=self.node_size, ax=ax, cmap=self.cmap)
+        if self.with_labels:
+            if max(len(str(l)) for l in pos) <= 2:
+                nx.draw_networkx_labels(graph, pos, fontsize=self.fontsize, ax=ax)
+            else:
+                for label, (x, y) in pos.items():
+                    ax.text(x, y+self.fontsize/3, label, ha='center', fontsize=self.fontsize)
+
 
 class BarPlot(BasePlot):
     """
@@ -250,9 +322,8 @@ class MatrixPlot(BasePlot):
     A 2D plot of intensity values. Data must be a list of lists or equivalent.
     `self.colors` is the colormap ( http://matplotlib.org/examples/color/colormaps_reference.html ).
     """
-    colors = 'cubehelix'
     def _draw(self, keys, values, ax):
-        im = ax.imshow(values, interpolation='nearest', cmap=pyplot.get_cmap(self.colors))
+        im = ax.imshow(values, interpolation='nearest', cmap=self.cmap)
         pyplot.colorbar(im, ax=ax)
 
     def _setup_margins(self, keys, values, ax):
@@ -261,8 +332,9 @@ class MatrixPlot(BasePlot):
 def plot(data, **options):
     """
     Given the raw data, selects the most appropriate type of plot and
-    constructs it with the given options. Note: it does not count
-    occurrences from samples. Use the `Histogram` class for that.
+    constructs it with the given options. Note: because of data ambiguity,
+    some graph types are not selected automatically, such as Histogram
+    or Network.
     """
     data = BasePlot._format_data(data)
     if not len(data):
@@ -304,8 +376,15 @@ def show_grid(plots, nrows=None):
     pyplot.close()
 
 if __name__ == '__main__':
-    from random import randint, random, sample, choice
+    from random import randint, random, sample, choice, shuffle
     from string import ascii_lowercase
+
+    show_grid([
+        Network([(i, randint(1, 100)) for i in range(100)]),
+        Network({'A': 'B', 'B': 'C', 'C': 'A', 'D': 'E', 'E': 'F'}, directed=True, with_labels=True),
+        Network({'Alice': 'Bob', 'Bob': 'Eve', 'Eve': 'Alice'}, directed=True, with_labels=True),
+    ])
+    exit()
 
     plots = [
         plot([('Shanghai', 24256800), ('Beijing', 21516000), ('Lagos', 21324000), ('Tokyo', 13297629), ('São Paulo', 11895893)]),
@@ -317,6 +396,8 @@ if __name__ == '__main__':
         plot([random()-0.5 for i in range(100)]),
         plot([1+i*random() for i in range(100)], fill=True),
         plot([[i^j for i in range(250)] for j in range(150)]),
+        Network([(i, randint(1, 100)) for i in range(100)]),
+        Network({'A': 'B', 'B': 'C', 'C': 'A', 'D': 'E', 'E': 'F'}, directed=True, with_labels=True),
     ]
     show_grid(plots)
     
