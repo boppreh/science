@@ -12,6 +12,7 @@ class BasePlot(object):
     title = ''
     xlabel = ''
     ylabel = ''
+    extra_width = 0
 
     def __init__(self, data, options):
         self.data = self._format_data(data)
@@ -63,13 +64,15 @@ class BasePlot(object):
         min_data = min(values)
         # Avoid trncating Y axis unless absolutely necessary.
         distance = max_data - min_data
-        if distance > 0.01 * min_data:
+        if distance == 0:
+            pass
+        elif distance > 0.01 * min_data:
             pyplot.ylim(0, max_data)
         else:
             pyplot.ylim(min_data - distance * 0.3, max_data + distance * 0.3)
 
         # Fix x-axis, including final bar if necessary.
-        pyplot.xlim(min(keys), max(keys)+self.bars_width)
+        pyplot.xlim(min(keys), max(keys)+self.extra_width)
 
         # Show full value in ticks, instead of using an offset.
         ax.xaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter(useOffset=False))
@@ -99,10 +102,13 @@ class Histogram(BasePlot):
         if bin is None:
             difs = [b - a for a, b in zip(samples_set, samples_set[1:])]
             # Use the smallest difference as bin size, up to a maximum of 40.
-            bin = max(min(difs), (samples_set[-1] - samples_set[0]) / 40)
+            bin = max(min(difs), int((samples_set[-1] - samples_set[0]) / 40))
 
-        data = {k*bin: v for k, v in Counter(int(s/bin) for s in samples).items()}
+        data = {(k-0.5)*bin: v for k, v in Counter(int(s/bin) for s in samples).items()}
+        print(bin)
         self.bars_width = bin
+        print(bin)
+        self.extra_width = self.bars_width
         super().__init__(data, options)
 
     def _plot(self, keys, values):
@@ -135,5 +141,5 @@ class LinePlot(BasePlot):
 if __name__ == '__main__':
     from random import randint, random
     #Histogram([100100, 100200, 100300, 100100, 100150, 100520, 100300]).show()
-    Histogram([random()+1 for i in range(100)]).show()
+    Histogram([randint(10, 100) for i in range(100)]).show()
     #Plot({'a': 100, 'b': 500}).show()
