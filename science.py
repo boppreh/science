@@ -17,6 +17,7 @@ class BasePlot(object):
     title = ''
     xlabel = ''
     ylabel = ''
+    fontsize = 14
 
     @staticmethod
     def _format_data(data):
@@ -66,7 +67,8 @@ class BasePlot(object):
             num_keys = [s.index(key) for key in keys]
             pyplot.xticks(num_keys, keys)
             keys = num_keys
-        self._plot(keys, values)
+
+        self._plot(keys, values, ax)
 
         ax.margins(x=.02, y=0.02)
 
@@ -85,8 +87,8 @@ class BasePlot(object):
         pyplot.xlabel(self.xlabel)
         pyplot.ylabel(self.ylabel)
 
-        pyplot.xticks(fontsize=14)
-        pyplot.yticks(fontsize=14)
+        pyplot.xticks(fontsize=self.fontsize)
+        pyplot.yticks(fontsize=self.fontsize)
 
         fig.tight_layout()
 
@@ -106,8 +108,17 @@ class TimePlot(BasePlot):
 class BarPlot(BasePlot):
     bars_width = 0.9
 
-    def _plot(self, keys, values):
-        pyplot.bar(keys, values, width=self.bars_width, align='center')
+    def _plot(self, keys, values, ax):
+        rects = pyplot.bar(keys, values, width=self.bars_width, align='center')
+        if len(rects) < 10:
+            ax.spines['left'].set_visible(False)
+            ax.spines['bottom'].set_visible(False)
+            ax.get_yaxis().set_visible(False)
+            ax.xaxis.set_ticks_position('none')
+            max_height = max(rect.get_height() for rect in rects)
+            for rect in rects:
+                height = rect.get_height()
+                ax.text(rect.get_x() + rect.get_width()/2., rect.get_y()+height+max_height*0.01, rect.get_y() or height, ha='center', va='bottom', fontsize=self.fontsize)
 
 class Histogram(BarPlot):
     def __init__(self, samples, bin=None, **options):
@@ -122,13 +133,13 @@ class Histogram(BarPlot):
         super().__init__(data, **options)
 
 class ScatterPlot(BasePlot):
-    def _plot(self, keys, values):
+    def _plot(self, keys, values, ax):
         pyplot.scatter(keys, values)
 
 class LinePlot(BasePlot):
     fill = True
 
-    def _plot(self, keys, values):
+    def _plot(self, keys, values, ax):
         if self.fill:
             pyplot.fill_between(keys, values)
         else:
@@ -149,10 +160,10 @@ def plot(data, **options):
         return LinePlot(data, **options)
 
 if __name__ == '__main__':
-    #BarPlot({'Shanghai': 24256800, 'Beijing': 21516000, 'Lagos': 21324000, 'Tokyo': 13297629, 'São Paulo': 11895893}).show()
+    BarPlot({'Shanghai': 24256800, 'Beijing': 21516000, 'Lagos': 21324000, 'Tokyo': 13297629, 'São Paulo': 11895893}).show()
 
     from random import randint, random
     #plot([('John', 3.5), ('Mary', 4), ('Charlie', 2.2)]).show()
     #Histogram([1000100, 1000200, 1000300, 1000100, 1000150, 1000520, 1000300]).show()
     #plot([(randint(0, 100), i * random()) for i in range(10000)]).show()
-    plot([random() * 100 for i in range(100)]).show()
+    #plot([random() * 100 for i in range(100)]).show()
