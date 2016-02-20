@@ -110,7 +110,7 @@ class BasePlot(object):
         # Handle non-numeric data on the x-axis.
         if isinstance(keys[0], str):
             # Heuristic to rotate label to fit if necessary.
-            rotation = 30 if len(''.join(keys)) > 80 else 0
+            rotation = 45 if len(''.join(keys)) > 80 else 0
             s = sorted(set(keys))
             num_keys = [s.index(key) for key in keys]
             ax.set_xticks(num_keys)
@@ -190,12 +190,10 @@ class Network(BasePlot):
     arrowstyle = '-|>' # http://matplotlib.org/api/patches_api.html?highlight=fancyarrowpatch#matplotlib.patches.FancyArrowPatch
     node_color = 'r'
 
-    def _draw_plot(self, fig=None, ax=None):
+    @property
+    def graph(self):
         import networkx as nx
-        from networkx.drawing.nx_pydot import graphviz_layout, pydot_layout
-        from matplotlib.patches import FancyArrowPatch
-
-        graph = nx.Graph()
+        graph = nx.MultiDiGraph()
 
         for start, end in self.data:
             if end is None:
@@ -203,6 +201,35 @@ class Network(BasePlot):
             else:
                 graph.add_edge(start, end)
 
+        return graph
+
+    def _draw_dot_plot(self, fig=None, ax=None):
+        import networkx
+
+        if fig is None:
+            fig = pyplot.figure(figsize=(8,8))
+            ax = pyplot.subplot(111)
+        ax.axis('off')
+
+        png = networkx.drawing.nx_pydot.to_pydot(self.graph).create_png()
+        try:
+            from cStringIO import StringIO as Buffer
+        except ImportError:
+            from io import BytesIO as Buffer
+        buffer = Buffer()
+        buffer.write(png)
+        buffer.seek(0)
+        ax.imshow(matplotlib.image.imread(buffer))
+
+    def _draw_plot(self, fig=None, ax=None):
+        import networkx as nx
+        from networkx.drawing.nx_pydot import graphviz_layout, pydot_layout
+        from matplotlib.patches import FancyArrowPatch
+
+        graph = self.graph
+
+        # Graphviz is a pain to install in Windows and may not be available.
+        # Spring layout is awful, but at least is guaranteed to work.
         try:
             pos = graphviz_layout(graph)
         except:
@@ -211,18 +238,25 @@ class Network(BasePlot):
         if fig is None:
             fig = pyplot.figure(figsize=(8,8))
             ax = pyplot.subplot(111)
+
+        # We are not plotting actual values, hide both axis.
         ax.axis('off')
         
+        # Increase node size to fit labels.
         if self.node_size is None:
             if self.with_labels:
                 self.node_size = 300
             else:
                 self.node_size = 20
 
-        #nx.draw_networkx(graph, pos, node_size=self.node_size, ax=ax, cmap=self.cmap, with_labels=self.with_labels)
         nx.draw_networkx_edges(graph, pos, ax=ax, arrowhead=False)
+
         if self.directed:
+            # Networkx default "directed" visualization just draws a thicker stub at the end.
+            # This code adds actual arrow heads, taking care not to overlap the nodes themselves.
             for start, end in self.data:
+                if start == end:
+                    continue
                 start_x, start_y = pos[start]
                 end_x, end_y = pos[end]
                 angle = math.atan2(end_y-start_y, end_x-start_x)
@@ -233,13 +267,16 @@ class Network(BasePlot):
                                     mutation_scale=30, connectionstyle="arc3"))
 
         nx.draw_networkx_nodes(graph, pos, node_size=self.node_size, ax=ax, node_color=self.node_color, cmap=self.cmap)
+
         if self.with_labels:
             if max(len(str(l)) for l in pos) <= 2:
                 nx.draw_networkx_labels(graph, pos, fontsize=self.fontsize, ax=ax)
             else:
+                # Large labels don't look because they don't fit. In that case
+                # we draw them outside the node, slightly above, with a white
+                # box behind.
                 for label, (x, y) in pos.items():
                     ax.text(x, y+self.fontsize/3, label, ha='center', fontsize=self.fontsize, bbox={'color': 'white', 'alpha': 1})
-
 
 class BarPlot(BasePlot):
     """
@@ -379,27 +416,20 @@ def show_grid(plots, nrows=None):
 
 if __name__ == '__main__':
     from random import randint, random, sample, choice, shuffle
-    from string import ascii_lowercase
-
-    show_grid([
-        Network([(i, randint(1, 100)) for i in range(100)]),
-        Network({'A': 'B', 'B': 'C', 'C': 'A', 'D': 'E', 'E': 'F'}, directed=True, with_labels=True),
-        Network({'Alice': 'Bob', 'Bob': 'Eve', 'Eve': 'Alice'}, directed=True, with_labels=True),
-    ])
-    exit()
+    from string import ascii_lowercase, ascii_uppercase
 
     plots = [
         plot([('Shanghai', 24256800), ('Beijing', 21516000), ('Lagos', 21324000), ('Tokyo', 13297629), ('São Paulo', 11895893)]),
         Histogram([random()*random()+random() for i in range(1000)]),
         Histogram([randint(1000, 1010) for i in range(1000)]),
         plot([(''.join(sample(ascii_lowercase, 5)), random()) for i in range(17)]),
-        plot([(choice('abcde'), random()*i) for i in range(50)]),
+        plot([(choice('abcde'), random()*i) for i in range(50)], grid=True),
         plot([(randint(0, 100), i * random()) for i in range(100)]),
         plot([random()-0.5 for i in range(100)]),
-        plot([1+i*random() for i in range(100)], fill=True),
+        plot([1+i*random() for i in range(100)], fill=True, grid=True),
         plot([[i^j for i in range(250)] for j in range(150)]),
         Network([(i, randint(1, 100)) for i in range(100)]),
-        Network({'A': 'B', 'B': 'C', 'C': 'A', 'D': 'E', 'E': 'F'}, directed=True, with_labels=True),
+        Network([(choice('ABCDEFGHI'), choice('ABCDEFGHI')) for i in range(15)], directed=True, with_labels=True),
     ]
     show_grid(plots)
     
