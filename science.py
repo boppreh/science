@@ -122,7 +122,7 @@ class BasePlot(object):
             _, values_width = min_max_dif(values)
             ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: format_number(x, values_width)))
 
-        if not hasattr(keys[0], '__iter__') and keys[0] is not None:
+        if not hasattr(keys[0], '__iter__') and keys[0] is not None and not isinstance(keys[0], str):
             _, keys_width = min_max_dif(keys)
             ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: format_number(x, keys_width)))
 
@@ -365,7 +365,7 @@ class Histogram(BarPlot):
 
         data = {k*bin: v for k, v in Counter(int(s/bin) for s in samples).items()}
         self.bars_width = bin
-        super().__init__(data, **options)
+        BarPlot.__init__(self, data, **options)
 
 class ScatterPlot(BasePlot):
     """ Draws a small circle on the (x, y) position of each data point. """
@@ -436,7 +436,7 @@ def show_grid(plots, nrows=None):
     plots = list(plots)
     if nrows == None:
         nrows = int(math.sqrt(len(plots)))
-    ncols = math.ceil(len(plots) / nrows)
+    ncols = int(math.ceil(len(plots) / nrows))
 
     fig, axes = pyplot.subplots(nrows=nrows, ncols=ncols)
     for ax, p in zip(axes.flat, plots):
@@ -452,7 +452,7 @@ if __name__ == '__main__':
     # show_grid([Network(zip(range(100), sample(range(100), 100))) for i in range(9)])
 
     plots = [
-        plot([('Shanghai', 24256800), ('Beijing', 21516000), ('Lagos', 21324000), ('Tokyo', 13297629), ('São Paulo', 11895893)]),
+        plot([('Shanghai', 24256800), ('Beijing', 21516000), ('Lagos', 21324000), ('Tokyo', 13297629), ('Sao Paulo', 11895893)]),
         Histogram([random()*random()+random() for i in range(1000)]),
         Histogram([randint(1000, 1010) for i in range(1000)]),
         plot([(''.join(sample(ascii_lowercase, 5)), random()) for i in range(17)]),
