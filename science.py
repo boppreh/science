@@ -77,7 +77,7 @@ class BasePlot(object):
             if len(data) and is_list(data[0]):
                 if len(data[0]) == 2:
                     # List of (key, value) pairs.
-                    return data
+                    return sorted(data)
                 else:
                     # Matrix.
                     return [(None, line) for line in data]
