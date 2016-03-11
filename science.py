@@ -29,7 +29,7 @@ pyplot.style.use('ggplot')
 #matplotlib.rcParams['ytick.direction'] = 'out'
 
 def format_number(n, width):
-    if int(width) == width and int(n) == n:
+    if (int(width) == width and int(n) == n) or width == 0:
         return '{:,d}'.format(int(n))
 
     decimal_digits = max(0, int(-math.log10(width)+2), int(-math.log10(abs(n) or 1)))
@@ -37,9 +37,9 @@ def format_number(n, width):
     return format.format(n)
 
 def min_max_dif(values):
-    if len(values) < 2:
+    sorted_values = sorted(set(values))
+    if len(sorted_values) < 2:
         return 0, 0
-    sorted_values = sorted(values)
     difs = [abs(b - a) for a, b in zip(sorted_values, sorted_values[1:])]
     return min(difs), sorted_values[-1] - sorted_values[0]
 
@@ -445,10 +445,22 @@ def show_grid(plots, nrows=None):
     pyplot.show()
     pyplot.close()
 
+def merge(*plots):
+    fig = pyplot.figure(figsize=(12, 9))
+    ax = pyplot.subplot(111)
+
+    for p in plots:
+    	p._draw_plot(fig, ax)
+
+    pyplot.show()
+    pyplot.close()
+
 if __name__ == '__main__':
     from random import randint, random, sample, choice, shuffle
     from string import ascii_lowercase, ascii_uppercase
 
+    merge(plot(range(10)), plot(range(10, 0, -1)))
+    exit()
     # show_grid([Network(zip(range(100), sample(range(100), 100))) for i in range(9)])
 
     plots = [
@@ -466,4 +478,3 @@ if __name__ == '__main__':
         Network({'Alice': 'Bob', 'Bob': 'Charlie', 'Charlie': 'Alice', 'Eve': None}),
     ]
     show_grid(plots)
-    
