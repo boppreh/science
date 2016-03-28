@@ -55,6 +55,7 @@ class BasePlot(object):
     ylabel = ''
     fontsize = 14
     colors = 'cubehelix'
+    figsize = (12, 9)
 
     @staticmethod
     def _format_data(data):
@@ -91,6 +92,13 @@ class BasePlot(object):
         self.data = self._format_data(data)
         self._apply_options(options)
 
+    def _get_fig_ax(self, fig=None, ax=None):
+        if fig:
+            return fig, ax
+        else:
+            fig = pyplot.figure(figsize=self.fig_size)
+            ax = pyplot.subplot(111)
+
     def _apply_options(self, options):
         """ Loads settings from the given dictionary. """
         for option, value in options.items():
@@ -106,9 +114,7 @@ class BasePlot(object):
         keys = [a for a, b in self.data]
         values = [b for a, b in self.data]
 
-        if fig is None:
-            fig = pyplot.figure(figsize=(12, 9))
-            ax = pyplot.subplot(111)
+        fig, ax = self._get_fig_ax(fig, ax)
 
         # Hide frame lines on top and right sides.
         ax.spines['top'].set_visible(False)
@@ -209,6 +215,7 @@ class Network(BasePlot):
     directed = False
     arrowstyle = '-|>' # http://matplotlib.org/api/patches_api.html?highlight=fancyarrowpatch#matplotlib.patches.FancyArrowPatch
     node_color = 'r'
+    fig_size = (8, 8)
 
     @property
     def graph(self):
@@ -233,9 +240,7 @@ class Network(BasePlot):
         """
         import networkx
 
-        if fig is None:
-            fig = pyplot.figure(figsize=(8,8))
-            ax = pyplot.subplot(111)
+        fig, ax = self._get_fig_ax(fig, ax)
         ax.axis('off')
 
         png = networkx.drawing.nx_pydot.to_pydot(self.graph).create_png()
@@ -262,9 +267,7 @@ class Network(BasePlot):
         except:
             pos = nx.spring_layout(graph, iterations=20)
             
-        if fig is None:
-            fig = pyplot.figure(figsize=(8,8))
-            ax = pyplot.subplot(111)
+        fig, ax = self._get_fig_ax(fig, ax)
 
         # We are not plotting actual values, hide both axis.
         ax.axis('off')
@@ -459,8 +462,8 @@ if __name__ == '__main__':
     from random import randint, random, sample, choice, shuffle
     from string import ascii_lowercase, ascii_uppercase
 
-    merge(plot(range(10)), plot(range(10, 0, -1)))
-    exit()
+    #merge(plot(range(10)), plot(range(10, 0, -1)))
+    #exit()
     # show_grid([Network(zip(range(100), sample(range(100), 100))) for i in range(9)])
 
     plots = [
