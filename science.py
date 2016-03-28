@@ -28,13 +28,13 @@ pyplot.style.use('ggplot')
 #matplotlib.rcParams['xtick.direction'] = 'out'
 #matplotlib.rcParams['ytick.direction'] = 'out'
 
-def format_number(n, width, prefix, suffix):
+def format_number(n, width, prefix='', suffix=''):
     if (int(width) == width and int(n) == n) or width == 0:
         return '{:,d}'.format(int(n))
 
     decimal_digits = max(0, int(-math.log10(width)+2), int(-math.log10(abs(n) or 1)))
     format = '{' + ':0,.{}f'.format(decimal_digits) + '}'
-    return format.format(n)
+    return prefix + format.format(n) + suffix
 
 def min_max_dif(values):
     sorted_values = sorted(set(values))
@@ -56,6 +56,10 @@ class BasePlot(object):
     fontsize = 14
     colors = 'cubehelix'
     fig_size = (12, 9)
+    xprefix = ''
+    xsuffix = ''
+    yprefix = ''
+    ysuffix = ''
 
     @staticmethod
     def _format_data(data):
@@ -128,11 +132,11 @@ class BasePlot(object):
 
         if not hasattr(values[0], '__iter__'):
             _, values_width = min_max_dif(values)
-            ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: format_number(x, values_width)))
+            ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: format_number(x, values_width, self.yprefix, self.ysuffix)))
 
         if not hasattr(keys[0], '__iter__') and keys[0] is not None and not isinstance(keys[0], str):
             _, keys_width = min_max_dif(keys)
-            ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: format_number(x, keys_width)))
+            ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: format_number(x, keys_width, self.xprefix, self.xsuffix)))
 
         # Handle non-numeric data on the x-axis.
         if isinstance(keys[0], str):
@@ -372,7 +376,7 @@ class BarPlot(BasePlot):
                 else:
                     y = rect.get_y()+height + padding * 2
                 _, max_width = min_max_dif(values)
-                value = format_number(rect.get_y() or height, max_width)
+                value = format_number(rect.get_y() or height, max_width, self.yprefix, self.ysuffix)
                 ax.text(rect.get_x() + rect.get_width()/2., y, value, ha='center', va='top')
 
 class Histogram(BarPlot):
@@ -489,8 +493,8 @@ if __name__ == '__main__':
     from string import ascii_lowercase, ascii_uppercase
 
     #merge(plot(range(10)), plot(range(10, 0, -1)))
-    (plot(range(10)) + plot(range(10, 0, -1)) | plot(range(20, 0, -2))).show()
-    exit()
+    #(plot(range(10)) + plot(range(10, 0, -1)) | plot(range(20, 0, -2))).show()
+    #exit()
     # show_grid([Network(zip(range(100), sample(range(100), 100))) for i in range(9)])
 
     plots = [
@@ -501,7 +505,7 @@ if __name__ == '__main__':
         plot([(choice('abcde'), random()*i) for i in range(50)], grid=True),
         plot([(randint(0, 100), i * random()) for i in range(100)]),
         plot([random()-0.5 for i in range(100)]),
-        plot([100000+i*random() for i in range(100)], fill=True, grid=True),
+        plot([100000+i*random() for i in range(100)], fill=True, grid=True, yprefix='$'),
         plot([[i^j for i in range(250)] for j in range(150)]),
         Network([(i, randint(1, 100)) for i in range(100)]),
         Network([(choice('ABCDEFGHI'), choice('ABCDEFGHI')) for i in range(15)], directed=True, with_labels=True),
