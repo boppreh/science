@@ -76,7 +76,7 @@ class BasePlot(object):
         """
         if isinstance(data, dict):
             # Dictionary.
-            return list(data.items())
+            return sorted(data.items())
         elif is_list(data):
             data = list(data)
             if len(data) and is_list(data[0]):
