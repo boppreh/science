@@ -28,7 +28,7 @@ pyplot.style.use('ggplot')
 #matplotlib.rcParams['xtick.direction'] = 'out'
 #matplotlib.rcParams['ytick.direction'] = 'out'
 
-def format_number(n, width):
+def format_number(n, width, prefix, suffix):
     if (int(width) == width and int(n) == n) or width == 0:
         return '{:,d}'.format(int(n))
 
@@ -177,10 +177,51 @@ class BasePlot(object):
         # Remove extraneous whitespace.
         pyplot.savefig(path, bbox_inches="tight")
 
+    def __add__(self, other):
+        return MergedPlots([self, other])
+
+    def __or__(self, other):
+        return GridPlots([self, other])
+
     @property
     def cmap(self):
         return pyplot.get_cmap(self.colors)
+
+class MergedPlots(BasePlot):
+    def __init__(self, plots):
+        self.plots = plots
+
+    def _draw_plot(self, fig=None, ax=None):
+        fig, ax = self._get_fig_ax(fig, ax)
+        for plot in self.plots:
+            plot._draw_plot(fig, ax)
+
+    def __add__(self, other):
+        return MergedPlots(self.plots + [other])
     
+
+class GridPlots(BasePlot):
+    nrows = None
+
+    def __init__(self, plots):
+        self.plots = plots
+
+    def _draw_plot(self, fig=None, ax=None):
+        if len(self.plots) == 1:
+            return self.plots[0].show()
+
+        nrows = self.nrows or int(math.sqrt(len(self.plots)))
+        ncols = int(math.ceil(len(self.plots) / nrows))
+
+        fig, axes = pyplot.subplots(nrows=nrows, ncols=ncols)
+        for ax, p in zip(axes.flat, self.plots):
+            p._draw_plot(fig, ax)
+
+        pyplot.show()
+        pyplot.close()
+
+    def __or__(self, other):
+        return GridPlots(self.plots + [other])
 
 class TimePlot(BasePlot):
     pass
@@ -448,7 +489,8 @@ if __name__ == '__main__':
     from string import ascii_lowercase, ascii_uppercase
 
     #merge(plot(range(10)), plot(range(10, 0, -1)))
-    #exit()
+    (plot(range(10)) + plot(range(10, 0, -1)) | plot(range(20, 0, -2))).show()
+    exit()
     # show_grid([Network(zip(range(100), sample(range(100), 100))) for i in range(9)])
 
     plots = [
