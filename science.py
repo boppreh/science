@@ -55,7 +55,7 @@ class BasePlot(object):
     ylabel = ''
     fontsize = 14
     colors = 'cubehelix'
-    figsize = (12, 9)
+    fig_size = (12, 9)
 
     @staticmethod
     def _format_data(data):
@@ -94,10 +94,12 @@ class BasePlot(object):
 
     def _get_fig_ax(self, fig=None, ax=None):
         if fig:
+            assert ax
             return fig, ax
         else:
             fig = pyplot.figure(figsize=self.fig_size)
             ax = pyplot.subplot(111)
+            return fig, ax
 
     def _apply_options(self, options):
         """ Loads settings from the given dictionary. """
@@ -146,7 +148,7 @@ class BasePlot(object):
 
         # Must be called *after* drawing the data, otherwise we don't know
         # what to scale to.
-        self._setup_margins(keys, values, ax)
+        ax.margins(x=.03, y=0.03, tight=True)
         
         ax.set_title(self.title)
         ax.set_xlabel(self.xlabel)
@@ -156,23 +158,6 @@ class BasePlot(object):
 
         # Resize plot to fill available space.
         fig.tight_layout()
-
-    def _setup_margins(self, keys, values, ax):
-        """ Gives a little space between the data and the axis. """
-        ax.margins(x=.02, y=0.02)
-
-        # Apply Y limits and margins manually to avoid truncating unless
-        # absolutely necessary. All magical constants were eyeballed.
-        max_data = max(values)
-        min_data = min(values)
-        distance = (max_data - min_data) or abs(min_data)
-        if 0 < distance < 0.01 * min_data:
-            ax.set_ylim(min_data - distance * 0.4, max_data + distance * 0.4)
-        else:
-            if min_data < 0:
-                ax.set_ylim(ymin=min_data-distance*0.02)
-            else:
-                ax.set_ylim(ymin=-distance*0.02)
 
     def show(self):
         """
