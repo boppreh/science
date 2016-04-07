@@ -187,6 +187,7 @@ class BasePlot(object):
         self._draw_plot()
         pyplot.show()
         pyplot.close()
+        return self
 
     def save(self, path):
         """
@@ -197,6 +198,7 @@ class BasePlot(object):
         self._draw_plot()
         # Remove extraneous whitespace.
         pyplot.savefig(path, bbox_inches="tight")
+        return self
 
     def __add__(self, other):
         return MergedPlots([self, other])
