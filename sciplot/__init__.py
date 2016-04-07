@@ -28,7 +28,10 @@ pyplot.style.use('ggplot')
 #matplotlib.rcParams['xtick.direction'] = 'out'
 #matplotlib.rcParams['ytick.direction'] = 'out'
 
-def format_number(n, width, prefix='', suffix=''):
+def format_number(n, width, prefix='', suffix='', percentage=False):
+    if percentage:
+        return format_number(n*100, width, prefix, '%'+suffix)
+        
     if (int(width) == width and int(n) == n) or width == 0:
         return '{:,d}'.format(int(n))
 
@@ -63,6 +66,7 @@ class BasePlot(object):
     xlog = False
     ylog = False
     background = '#eeeeee'
+    percentage = False
 
     @staticmethod
     def _format_data(data):
@@ -145,7 +149,7 @@ class BasePlot(object):
 
         if not hasattr(values[0], '__iter__'):
             _, values_width = min_max_dif(values)
-            ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: format_number(x, values_width, self.yprefix, self.ysuffix)))
+            ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: format_number(x, values_width, self.yprefix, self.ysuffix, percentage=self.percentage)))
 
         if not hasattr(keys[0], '__iter__') and keys[0] is not None and not isinstance(keys[0], str):
             _, keys_width = min_max_dif(keys)
