@@ -19,6 +19,7 @@ setup(
     author='BoppreH',
     author_email='boppreh@gmail.com',
     packages=['sciplot'],
+    install_requires=['matplotlib']
     url='https://github.com/boppreh/sciplot',
     license='MIT',
     description='Pythonic data visualization tool based on matplotlib',
