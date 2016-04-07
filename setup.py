@@ -9,20 +9,13 @@ try:
     import pypandoc
     long_description = pypandoc.convert('README.md', 'rst')
 except ImportError:
-    try:
-        long_description = open('README.md').read()
-    except:
-        try:
-            long_description = open('README.rst').read()
-        except:
-            print('Failed to convert README to rst.')
-            long_description = ''
+    long_description = open('README.rst').read()
 
 from setuptools import setup
 
 setup(
     name='sciplot',
-    version='0.4',
+    version='0.6',
     author='BoppreH',
     author_email='boppreh@gmail.com',
     packages=['sciplot'],
