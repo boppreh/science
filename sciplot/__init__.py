@@ -62,6 +62,7 @@ class BasePlot(object):
     ysuffix = ''
     xlog = False
     ylog = False
+    background = '#eeeeee'
 
     @staticmethod
     def _format_data(data):
@@ -123,6 +124,11 @@ class BasePlot(object):
         values = [b for a, b in self.data]
 
         fig, ax = self._get_fig_ax(fig, ax)
+
+        if self.background is None:
+            ax.set_axis_bgcolor('none')
+        else:
+            ax.set_axis_bgcolor(self.background)
 
         # Hide frame lines on top and right sides.
         ax.spines['top'].set_visible(False)
