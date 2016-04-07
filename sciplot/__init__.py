@@ -102,6 +102,7 @@ class BasePlot(object):
     def __init__(self, data, **options):
         self.data = self._format_data(data)
         self._apply_options(options)
+        self._draw_plot()
 
     def _get_fig_ax(self, fig=None, ax=None):
         if fig:
@@ -184,7 +185,6 @@ class BasePlot(object):
         """
         Opens a GUI window showing the plot, blocking the call until the window is closed.
         """
-        self._draw_plot()
         pyplot.show()
         pyplot.close()
         return self
@@ -195,7 +195,6 @@ class BasePlot(object):
         on the extension. PDF format is available and generates vector
         graphics.
         """
-        self._draw_plot()
         # Remove extraneous whitespace.
         pyplot.savefig(path, bbox_inches="tight")
         return self
