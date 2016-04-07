@@ -60,6 +60,8 @@ class BasePlot(object):
     xsuffix = ''
     yprefix = ''
     ysuffix = ''
+    xlog = False
+    ylog = False
 
     @staticmethod
     def _format_data(data):
@@ -129,6 +131,11 @@ class BasePlot(object):
         # Ensure ticks only on left and bottom, removing top and right ticks.
         ax.get_xaxis().tick_bottom()
         ax.get_yaxis().tick_left()
+
+        if self.xlog:
+            ax.set_xscale('log')
+        if self.ylog:
+            ax.set_yscale('log')
 
         if not hasattr(values[0], '__iter__'):
             _, values_width = min_max_dif(values)
@@ -211,6 +218,8 @@ class GridPlots(BasePlot):
         self.plots = plots
 
     def _draw_plot(self, fig=None, ax=None):
+        assert fig is None and ax is None
+
         if len(self.plots) == 1:
             return self.plots[0].show()
 
@@ -385,6 +394,7 @@ class Histogram(BarPlot):
     samples, and displays with no padding between bars.
     """
     max_bins = 40
+
     def __init__(self, samples, bin=None, **options):
         """
         Creates a new histogram from the given samples. `bin` is the size of
@@ -401,9 +411,11 @@ class Histogram(BarPlot):
         BarPlot.__init__(self, data, **options)
 
 class ScatterPlot(BasePlot):
+    color = None
+    
     """ Draws a small circle on the (x, y) position of each data point. """
     def _draw(self, keys, values, ax):
-        ax.scatter(keys, values)
+        ax.scatter(keys, values, color=self.color)
 
 class LinePlot(BasePlot):
     """
