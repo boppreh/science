@@ -55,7 +55,7 @@ class BasePlot(object):
     ylabel = ''
     fontsize = 14
     colors = 'cubehelix'
-    fig_size = (12, 9)
+    size = (12, 9)
     xprefix = ''
     xsuffix = ''
     yprefix = ''
@@ -104,7 +104,7 @@ class BasePlot(object):
             assert ax
             return fig, ax
         else:
-            fig = pyplot.figure(figsize=self.fig_size)
+            fig = pyplot.figure(figsize=self.size)
             ax = pyplot.subplot(111)
             return fig, ax
 
@@ -260,7 +260,7 @@ class Network(BasePlot):
     directed = False
     arrowstyle = '-|>' # http://matplotlib.org/api/patches_api.html?highlight=fancyarrowpatch#matplotlib.patches.FancyArrowPatch
     node_color = 'r'
-    fig_size = (8, 8)
+    size = (8, 8)
 
     @property
     def graph(self):
@@ -492,16 +492,6 @@ def show_grid(plots, nrows=None):
     fig, axes = pyplot.subplots(nrows=nrows, ncols=ncols)
     for ax, p in zip(axes.flat, plots):
         p._draw_plot(fig, ax)
-
-    pyplot.show()
-    pyplot.close()
-
-def merge(*plots):
-    fig = pyplot.figure(figsize=(12, 9))
-    ax = pyplot.subplot(111)
-
-    for p in plots:
-    	p._draw_plot(fig, ax)
 
     pyplot.show()
     pyplot.close()
