@@ -15,7 +15,7 @@ from setuptools import setup
 
 setup(
     name='sciplot',
-    version='0.6.2',
+    version='0.6.3',
     author='BoppreH',
     author_email='boppreh@gmail.com',
     packages=['sciplot'],
