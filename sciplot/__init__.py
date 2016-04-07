@@ -55,6 +55,7 @@ class BasePlot(object):
     ylabel = ''
     fontsize = 14
     colors = 'cubehelix'
+    background = '#eeeeee'
 
     @staticmethod
     def _format_data(data):
@@ -109,6 +110,11 @@ class BasePlot(object):
         if fig is None:
             fig = pyplot.figure(figsize=(12, 9))
             ax = pyplot.subplot(111)
+
+        if self.background is None:
+            ax.set_axis_bgcolor('none')
+        else:
+            ax.set_axis_bgcolor(self.background)
 
         # Hide frame lines on top and right sides.
         ax.spines['top'].set_visible(False)
