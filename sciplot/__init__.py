@@ -102,11 +102,9 @@ class BasePlot(object):
     def __init__(self, data, **options):
         self.data = self._format_data(data)
         self._apply_options(options)
-        self._draw_plot()
 
     def _get_fig_ax(self, fig=None, ax=None):
-        if fig:
-            assert ax
+        if ax:
             return fig, ax
         else:
             fig = pyplot.figure(figsize=self.size)
@@ -125,8 +123,9 @@ class BasePlot(object):
         Make or configure the `figure` and `plot` instances, with correct
         spacing, ticks, labels, etc.
         """
-        keys = [a for a, b in self.data]
-        values = [b for a, b in self.data]
+        if self.data is not None:
+            keys = [a for a, b in self.data]
+            values = [b for a, b in self.data]
 
         fig, ax = self._get_fig_ax(fig, ax)
 
@@ -148,16 +147,16 @@ class BasePlot(object):
         if self.ylog:
             ax.set_yscale('log')
 
-        if not hasattr(values[0], '__iter__'):
+        if values and not hasattr(values[0], '__iter__'):
             _, values_width = min_max_dif(values)
             ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: format_number(x, values_width, self.yprefix, self.ysuffix, percentage=self.percentage)))
 
-        if not hasattr(keys[0], '__iter__') and keys[0] is not None and not isinstance(keys[0], str):
+        if keys and not hasattr(keys[0], '__iter__') and keys[0] is not None and not isinstance(keys[0], str):
             _, keys_width = min_max_dif(keys)
             ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: format_number(x, keys_width, self.xprefix, self.xsuffix)))
 
         # Handle non-numeric data on the x-axis.
-        if isinstance(keys[0], str):
+        if keys and isinstance(keys[0], str):
             # Heuristic to rotate label to fit if necessary.
             rotation = 45 if len(''.join(keys)) > 80 else 0
             s = sorted(set(keys))
@@ -178,13 +177,17 @@ class BasePlot(object):
 
         ax.grid(self.grid)
 
-        # Resize plot to fill available space.
-        fig.tight_layout()
+        if fig:
+            # Resize plot to fill available space.
+            fig.tight_layout()
 
-    def show(self):
+    def show(self, **options):
         """
         Opens a GUI window showing the plot, blocking the call until the window is closed.
         """
+        self._apply_options(options)
+
+        self._draw_plot()
         pyplot.show()
         pyplot.close()
         return self
@@ -195,6 +198,7 @@ class BasePlot(object):
         on the extension. PDF format is available and generates vector
         graphics.
         """
+        self._draw_plot()
         # Remove extraneous whitespace.
         pyplot.savefig(path, bbox_inches="tight")
         return self
@@ -211,12 +215,19 @@ class BasePlot(object):
 
 class MergedPlots(BasePlot):
     def __init__(self, plots):
+        print('Making merged plot', plots)
         self.plots = plots
+        BasePlot.__init__(self, [])
 
     def _draw_plot(self, fig=None, ax=None):
         fig, ax = self._get_fig_ax(fig, ax)
         for plot in self.plots:
             plot._draw_plot(fig, ax)
+        BasePlot._draw_plot(self, fig, ax)
+        ax.legend()
+
+    def _draw(self, *args):
+        pass
 
     def __add__(self, other):
         return MergedPlots(self.plots + [other])
@@ -373,7 +384,7 @@ class BarPlot(BasePlot):
 
     def _draw(self, keys, values, ax):
         """ Draws the bar plot and transfers y-values to bars if possible. """
-        rects = ax.bar(keys, values, width=self.bars_width, align='center')
+        rects = ax.bar(keys, values, width=self.bars_width, align='center', label=self.title)
 
         # If there are few bars, hide the Y-axis and put value labels directly
         # on the bars themselves.
@@ -426,7 +437,7 @@ class ScatterPlot(BasePlot):
     
     """ Draws a small circle on the (x, y) position of each data point. """
     def _draw(self, keys, values, ax):
-        ax.scatter(keys, values, color=self.color)
+        ax.scatter(keys, values, color=self.color, label=self.title)
 
 class LinePlot(BasePlot):
     """
@@ -437,9 +448,9 @@ class LinePlot(BasePlot):
 
     def _draw(self, keys, values, ax):
         if self.fill:
-            ax.fill_between(keys, values)
+            ax.fill_between(keys, values, label=self.title)
         else:
-            ax.plot(keys, values)
+            ax.plot(keys, values, label=self.title)
 
 class MatrixPlot(BasePlot):
     """
