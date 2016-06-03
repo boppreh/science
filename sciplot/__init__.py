@@ -215,7 +215,6 @@ class BasePlot(object):
 
 class MergedPlots(BasePlot):
     def __init__(self, plots):
-        print('Making merged plot', plots)
         self.plots = plots
         BasePlot.__init__(self, [])
 
@@ -224,7 +223,12 @@ class MergedPlots(BasePlot):
         for plot in self.plots:
             plot._draw_plot(fig, ax)
         BasePlot._draw_plot(self, fig, ax)
-        ax.legend()
+
+        # Place labels on the same order as in the plot list.
+        ordered_labels = [plot.title for plot in self.plots]
+        handles, labels = ax.get_legend_handles_labels()
+        labels, handles = zip(*sorted(zip(labels, handles), key=lambda t: ordered_labels.index(t[0])))
+        ax.legend(handles, labels)
 
     def _draw(self, *args):
         pass
