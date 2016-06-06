@@ -377,6 +377,10 @@ class Network(BasePlot):
                 for label, (x, y) in pos.items():
                     ax.text(x, y+self.fontsize, label, ha='center', fontsize=self.fontsize, bbox={'color': 'white', 'alpha': 1})
 
+        if fig:
+            # Resize plot to fill available space.
+            fig.tight_layout()
+
 class BarPlot(BasePlot):
     """
     Simple graph of rectangular bars. By default there is a small padding
