@@ -109,6 +109,8 @@ class BasePlot(object):
         else:
             fig = pyplot.figure(figsize=self.size)
             ax = pyplot.subplot(111)
+            ax.values_width = 0
+            ax.keys_width = 0
             return fig, ax
 
     def _apply_options(self, options):
@@ -149,11 +151,13 @@ class BasePlot(object):
 
         if values and not hasattr(values[0], '__iter__'):
             _, values_width = min_max_dif(values)
-            ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: format_number(x, values_width, self.yprefix, self.ysuffix, percentage=self.percentage)))
+            ax.values_width = max(values_width, ax.values_width)
+            ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: format_number(x, ax.values_width, self.yprefix, self.ysuffix, percentage=self.percentage)))
 
         if keys and not hasattr(keys[0], '__iter__') and keys[0] is not None and not isinstance(keys[0], str):
             _, keys_width = min_max_dif(keys)
-            ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: format_number(x, keys_width, self.xprefix, self.xsuffix)))
+            ax.keys_width = max(keys_width, ax.keys_width)
+            ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: format_number(x, ax.keys_width, self.xprefix, self.xsuffix)))
 
         # Handle non-numeric data on the x-axis.
         if keys and isinstance(keys[0], str):
