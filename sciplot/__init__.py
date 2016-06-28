@@ -67,6 +67,7 @@ class BasePlot(object):
     ylog = False
     background = '#eeeeee'
     percentage = False
+    legend_location = 'best'
 
     @staticmethod
     def _format_data(data):
@@ -176,8 +177,10 @@ class BasePlot(object):
         ax.margins(x=.03, y=0.03, tight=True)
         
         ax.set_title(self.title)
-        ax.set_xlabel(self.xlabel)
-        ax.set_ylabel(self.ylabel)
+        if self.xlabel:
+            ax.set_xlabel(self.xlabel)
+        if self.ylabel:
+            ax.set_ylabel(self.ylabel)
 
         ax.grid(self.grid)
 
@@ -232,7 +235,7 @@ class MergedPlots(BasePlot):
         ordered_labels = [plot.title for plot in self.plots]
         handles, labels = ax.get_legend_handles_labels()
         labels, handles = zip(*sorted(zip(labels, handles), key=lambda t: ordered_labels.index(t[0])))
-        ax.legend(handles, labels)
+        ax.legend(handles, labels, loc=self.legend_location)
 
     def _draw(self, *args):
         pass
